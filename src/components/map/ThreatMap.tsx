@@ -486,30 +486,38 @@ function populateAttackArcs(group: L.LayerGroup) {
     };
     const colour = severityColours[arc.severity] || '#E01515';
 
+    // Critical arcs flow fastest, low/medium slowest
+    const animClass =
+      arc.severity === 'critical' ? 'animated-arc-critical' :
+      arc.severity === 'high'     ? 'animated-arc' :
+                                    'animated-arc-slow';
+
     const points = getArcPoints(
       [arc.fromLat, arc.fromLng],
       [arc.toLat, arc.toLng],
     );
 
-    // Outer glow line
+    // Outer glow line — pulses gently in opacity
     const glow = L.polyline(points, {
       color: colour,
       weight: 4,
       opacity: 0.15,
       smoothFactor: 1,
+      className: 'arc-glow-pulse',
     });
 
-    // Main arc line
+    // Main arc line — dashes flow along the path via stroke-dashoffset animation
     const line = L.polyline(points, {
       color: colour,
       weight: 1.5,
       opacity: 0.7,
-      dashArray: '8 4',
+      dashArray: '12 6',
       smoothFactor: 1,
+      className: animClass,
     });
 
-    // Arrowhead at destination
-    const arrow =L.circleMarker(
+    // Arrowhead at destination — pulses to draw the eye
+    const arrow = L.circleMarker(
       [arc.toLat, arc.toLng],
       {
         radius: 4,
@@ -517,6 +525,7 @@ function populateAttackArcs(group: L.LayerGroup) {
         fillColor: colour,
         fillOpacity: 0.8,
         weight: 1,
+        className: 'arc-target-pulse',
       }
     );
 
@@ -528,7 +537,7 @@ function populateAttackArcs(group: L.LayerGroup) {
       </div>
     `, { className: 'cyber-popup' });
 
-    // Origin pulse marker
+    // Origin marker — small static dot
     const origin = L.circleMarker(
       [arc.fromLat, arc.fromLng],
       {
