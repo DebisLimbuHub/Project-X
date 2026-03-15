@@ -235,12 +235,12 @@ function getMapHueFromScore(score: number): {
 } {
   const t = Math.max(0, Math.min(score / 10, 1)); // 0 → 1
 
-  // Tile filter — all values scale continuously with score
-  const brightness = (0.72 - t * 0.22).toFixed(2);   // 0.72 → 0.50  (darker at high threat)
-  const saturate   = (0.25 + t * 0.85).toFixed(2);   // 0.25 → 1.10  (more vivid reds)
-  const sepia      = (0.08 + t * 0.72).toFixed(2);   // 0.08 → 0.80  (warm red-brown cast)
-  const hueRot     = Math.round(-5  - t * 40);        // -5   → -45deg (pull toward red)
-  const contrast   = (1.05 + t * 0.30).toFixed(2);   // 1.05 → 1.35  (harder look)
+  // Tile filter — red tint builds up but map stays visible
+  const brightness = (0.90 - t * 0.15).toFixed(2);   // 0.90 → 0.75  (slight darkening only)
+  const saturate   = (0.60 + t * 0.50).toFixed(2);   // 0.60 → 1.10  (reds become vivid)
+  const sepia      = (0.05 + t * 0.35).toFixed(2);   // 0.05 → 0.40  (subtle warm cast)
+  const hueRot     = Math.round(-5  - t * 25);        // -5   → -30deg (pull toward red)
+  const contrast   = (1.00 + t * 0.15).toFixed(2);   // 1.00 → 1.15  (mild contrast boost)
 
   // Vignette opacity — barely visible at 0, strong glow at 10
   const vigOpacity = (0.02 + t * 0.16).toFixed(3);   // 0.02 → 0.18
