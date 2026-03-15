@@ -54,14 +54,14 @@ export function ThreatLevelPanel() {
 
   // Colour based on score
   const gaugeColour =
-    score >= 9 ? '#ff1744' :
-    score >= 7 ? '#ff5722' :
-    score >= 5 ? '#ff9800' :
-    score >= 3 ? '#ffc107' :
-    '#4caf50';
+    score >= 9 ? '#E00000' :
+    score >= 7 ? '#E01515' :
+    score >= 5 ? '#D43A1A' :
+    score >= 3 ? '#C46A2A' :
+    '#4A6B3F';
 
   const trendArrow = trend === 'rising' ? '▲' : trend === 'falling' ? '▼' : '—';
-  const trendColour = trend === 'rising' ? '#ff1744' : trend === 'falling' ? '#4caf50' : '#9e9e9e';
+  const trendColour = trend === 'rising' ? '#E00000' : trend === 'falling' ? '#4A6B3F' : '#8A8F98';
 
   return (
     <div className="hud-panel h-full flex flex-col overflow-hidden">
@@ -87,7 +87,7 @@ export function ThreatLevelPanel() {
           <path
             d={arcPath(startAngle, endAngle, radius)}
             fill="none"
-            stroke="#1e2a3a"
+            stroke="rgba(224,21,21,0.15)"
             strokeWidth="12"
             strokeLinecap="round"
           />
@@ -118,7 +118,7 @@ export function ThreatLevelPanel() {
               <line
                 key={tick}
                 x1={x1t} y1={y1t} x2={x2t} y2={y2t}
-                stroke="#2a4a6b"
+                stroke="rgba(224,21,21,0.1)"
                 strokeWidth="1"
               />
             );
@@ -180,12 +180,12 @@ export function ThreatLevelPanel() {
       {/* Component Breakdown — scrollable */}
       <div className="flex-1 overflow-y-auto px-2 pb-2">
         <div className="border-t border-cyber-border pt-2 space-y-1">
-          <ComponentRow label="Zero-Days" value={components.activeZeroDays} max={3} colour="#ff1744" />
-          <ComponentRow label="Unpatched CVEs" value={components.criticalCVEsUnpatched} max={10} colour="#ff5722" />
-          <ComponentRow label="APT Campaigns" value={components.activeAPTCampaigns} max={5} colour="#ff6d00" />
-          <ComponentRow label="Ransomware (24h)" value={components.ransomwareIncidents24h} max={10} colour="#ff9800" />
-          <ComponentRow label="Velocity Spikes" value={components.velocitySpikes} max={5} colour="#ffc107" />
-          <ComponentRow label="Signals" value={components.signalConvergences} max={3} colour="#00e5ff" />
+          <ComponentRow label="Zero-Days" value={components.activeZeroDays} max={3} colour="#E00000" />
+          <ComponentRow label="Unpatched CVEs" value={components.criticalCVEsUnpatched} max={10} colour="#E01515" />
+          <ComponentRow label="APT Campaigns" value={components.activeAPTCampaigns} max={5} colour="#D43A1A" />
+          <ComponentRow label="Ransomware (24h)" value={components.ransomwareIncidents24h} max={10} colour="#D43A1A" />
+          <ComponentRow label="Velocity Spikes" value={components.velocitySpikes} max={5} colour="#C46A2A" />
+          <ComponentRow label="Signals" value={components.signalConvergences} max={3} colour="#E01515" />
         </div>
       </div>
     </div>

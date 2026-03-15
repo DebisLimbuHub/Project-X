@@ -46,6 +46,15 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-cyber-bg">
+      {/* Global red hue overlay — gives everything a subtle red tint */}
+      <div
+        className="fixed inset-0 pointer-events-none z-[9999]"
+        style={{
+          background: 'radial-gradient(ellipse at center, rgba(224, 21, 21, 0.02) 0%, rgba(139, 10, 10, 0.04) 100%)',
+          mixBlendMode: 'screen',
+        }}
+      />
+
       {/* Search Modal (⌘K) */}
       <SearchModal />
 

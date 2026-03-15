@@ -1,5 +1,6 @@
 import { useCyberStore } from '@/store';
 import { sanitiseUrl, truncate } from '@/utils/sanitise';
+import { filterByTime } from '@/utils/time-filter';
 import { formatDistanceToNow } from 'date-fns';
 import type { ThreatCluster, ThreatSeverity } from '@/types';
 
@@ -9,27 +10,28 @@ import type { ThreatCluster, ThreatSeverity } from '@/types';
  */
 
 const SEVERITY_CONFIG: Record<ThreatSeverity, { label: string; colour: string; bg: string; border: string }> = {
-  critical: { label: 'CRIT', colour: '#ff1744', bg: 'rgba(255,23,68,0.1)', border: 'rgba(255,23,68,0.3)' },
-  high: { label: 'HIGH', colour: '#ff5722', bg: 'rgba(255,87,34,0.1)', border: 'rgba(255,87,34,0.3)' },
-  medium: { label: 'MED', colour: '#ff9800', bg: 'rgba(255,152,0,0.1)', border: 'rgba(255,152,0,0.3)' },
-  low: { label: 'LOW', colour: '#ffc107', bg: 'rgba(255,193,7,0.1)', border: 'rgba(255,193,7,0.3)' },
-  info: { label: 'INFO', colour: '#00bcd4', bg: 'rgba(0,188,212,0.1)', border: 'rgba(0,188,212,0.3)' },
+  critical: { label: 'CRIT', colour: '#E00000', bg: 'rgba(224,0,0,0.1)', border: 'rgba(224,0,0,0.3)' },
+  high: { label: 'HIGH', colour: '#E01515', bg: 'rgba(224,21,21,0.1)', border: 'rgba(224,21,21,0.3)' },
+  medium: { label: 'MED', colour: '#D43A1A', bg: 'rgba(212,58,26,0.1)', border: 'rgba(212,58,26,0.3)' },
+  low: { label: 'LOW', colour: '#C46A2A', bg: 'rgba(196,106,42,0.1)', border: 'rgba(196,106,42,0.3)' },
+  info: { label: 'INFO', colour: '#8A8F98', bg: 'rgba(138,143,152,0.1)', border: 'rgba(138,143,152,0.3)' },
 };
 
 export function ThreatFeedPanel() {
-  const { clusters } = useCyberStore();
+  const { clusters, timeFilter } = useCyberStore();
+  const filteredClusters = filterByTime(clusters, timeFilter, (c) => c.primary.publishedAt);
 
   return (
     <div className="hud-panel h-full flex flex-col overflow-hidden">
       <div className="hud-panel-header flex-shrink-0">
         <span className="hud-panel-title">📡 THREAT INTEL FEED</span>
         <span className="text-[9px] font-mono text-gray-500">
-          {clusters.length} clusters
+          {filteredClusters.length} clusters
         </span>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {clusters.length === 0 ? (
+        {filteredClusters.length === 0 ? (
           <div className="p-3 text-center">
             <span className="text-gray-600 text-xs font-mono">Fetching feeds...</span>
             <div className="mt-2 flex justify-center">
@@ -38,7 +40,7 @@ export function ThreatFeedPanel() {
           </div>
         ) : (
           <div className="p-1 space-y-1">
-            {clusters.slice(0, 25).map((cluster) => (
+            {filteredClusters.slice(0, 25).map((cluster) => (
               <ClusterCard key={cluster.id} cluster={cluster} />
             ))}
           </div>

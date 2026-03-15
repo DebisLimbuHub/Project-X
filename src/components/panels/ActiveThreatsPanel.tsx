@@ -1,5 +1,6 @@
 import { useCyberStore } from '@/store';
 import { truncate } from '@/utils/sanitise';
+import { filterByTime } from '@/utils/time-filter';
 import { formatDistanceToNow } from 'date-fns';
 import type { ThreatSeverity } from '@/types';
 
@@ -9,23 +10,24 @@ import type { ThreatSeverity } from '@/types';
  */
 
 const SEVERITY_DOT: Record<ThreatSeverity, string> = {
-  critical: '#ff1744',
-  high: '#ff5722',
-  medium: '#ff9800',
-  low: '#ffc107',
-  info: '#00bcd4',
+  critical: '#E00000',
+  high: '#E01515',
+  medium: '#D43A1A',
+  low: '#C46A2A',
+  info: '#8A8F98',
 };
 
 export function ActiveThreatsPanel() {
-  const { clusters } = useCyberStore();
+  const { clusters, timeFilter } = useCyberStore();
+  const filteredClusters = filterByTime(clusters, timeFilter, (c) => c.primary.publishedAt);
 
   // Filter to critical + high severity only
-  const activeThreats = clusters
+  const activeThreats = filteredClusters
     .filter((c) => c.severity === 'critical' || c.severity === 'high')
     .slice(0, 8);
 
-  const critCount = clusters.filter((c) => c.severity === 'critical').length;
-  const highCount = clusters.filter((c) => c.severity === 'high').length;
+  const critCount = filteredClusters.filter((c) => c.severity === 'critical').length;
+  const highCount = filteredClusters.filter((c) => c.severity === 'high').length;
 
   return (
     <div className="hud-panel h-full flex flex-col overflow-hidden">

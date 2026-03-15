@@ -1,5 +1,6 @@
 import { useCyberStore } from '@/store';
 import { APT_GROUPS } from '@/config/apt-groups';
+import { filterByTime } from '@/utils/time-filter';
 import type { ThreatCluster } from '@/types';
 
 /**
@@ -22,17 +23,22 @@ interface TargetEntry {
 
 const TARGET_PATTERNS: { target: string; country: string; flag: string; sector: string; keywords: RegExp[] }[] = [
   { target: 'US Power Grid', country: 'US', flag: '🇺🇸', sector: 'Energy', keywords: [/us.*power/i, /us.*grid/i, /american.*energy/i, /us.*electric/i] },
-  { target: 'US Government', country: 'US', flag: '🇺🇸', sector: 'Government', keywords: [/us.*government/i, /federal.*agency/i, /white house/i, /pentagon/i, /us.*department/i] },
-  { target: 'US Telecom', country: 'US', flag: '🇺🇸', sector: 'Telecom', keywords: [/us.*telecom/i, /american.*isp/i, /us.*carrier/i, /att\b/i, /verizon/i, /t-mobile/i] },
-  { target: 'UK Infrastructure', country: 'UK', flag: '🇬🇧', sector: 'Critical Infra', keywords: [/uk.*infra/i, /british.*water/i, /nhs/i, /uk.*energy/i, /london.*water/i] },
+  { target: 'US Government', country: 'US', flag: '🇺🇸', sector: 'Government', keywords: [/us.*government/i, /federal.*agency/i, /white house/i, /pentagon/i, /us.*department/i, /united states/i, /american/i, /washington/i, /congress/i, /senate/i, /fbi\b/i, /cia\b/i, /nsa\b/i] },
+  { target: 'US Telecom', country: 'US', flag: '🇺🇸', sector: 'Telecom', keywords: [/us.*telecom/i, /american.*isp/i, /us.*carrier/i, /att\b/i, /verizon/i, /t-mobile/i, /telecom/i, /network.*attack/i, /isp/i] },
+  { target: 'UK Infrastructure', country: 'UK', flag: '🇬🇧', sector: 'Critical Infra', keywords: [/uk.*infra/i, /british.*water/i, /nhs/i, /uk.*energy/i, /london.*water/i, /united kingdom/i, /british/i, /england/i, /scotland/i] },
   { target: 'German Industry', country: 'DE', flag: '🇩🇪', sector: 'Manufacturing', keywords: [/german.*industr/i, /german.*water/i, /german.*energy/i, /germany.*utility/i] },
-  { target: 'NATO Members', country: 'NATO', flag: '🏛️', sector: 'Defence', keywords: [/nato/i, /alliance.*member/i, /nato.*country/i] },
-  { target: 'Ukraine', country: 'UA', flag: '🇺🇦', sector: 'Government', keywords: [/ukrain/i, /kyiv/i, /ukrainian/i] },
+  { target: 'NATO Members', country: 'NATO', flag: '🏛️', sector: 'Defence', keywords: [/nato/i, /alliance.*member/i, /nato.*country/i, /europe.*attack/i, /eu\b.*cyber/i, /western.*allies/i] },
+  { target: 'Ukraine', country: 'UA', flag: '🇺🇦', sector: 'Government', keywords: [/ukrain/i, /kyiv/i, /ukrainian/i, /russian.*attack/i, /war.*cyber/i] },
   { target: 'Taiwan / TSMC', country: 'TW', flag: '🇹🇼', sector: 'Semiconductor', keywords: [/taiwan/i, /tsmc/i, /taiwanese/i] },
   { target: 'Saudi Energy', country: 'SA', flag: '🇸🇦', sector: 'Energy', keywords: [/saudi/i, /aramco/i, /riyadh/i] },
   { target: 'Israel', country: 'IL', flag: '🇮🇱', sector: 'Multi-sector', keywords: [/israel/i, /israeli/i, /tel aviv/i] },
   { target: 'South Korea', country: 'KR', flag: '🇰🇷', sector: 'Finance/Tech', keywords: [/south korea/i, /korean.*bank/i, /seoul/i, /korean.*railway/i] },
   { target: 'Japan Defence', country: 'JP', flag: '🇯🇵', sector: 'Defence', keywords: [/japan/i, /japanese.*defence/i, /tokyo.*cyber/i] },
+  { target: 'Healthcare Sector', country: 'GLOBAL', flag: '🏥', sector: 'Healthcare', keywords: [/hospital/i, /health.*care/i, /medical/i, /patient.*data/i, /pharma/i] },
+  { target: 'Financial Sector', country: 'GLOBAL', flag: '🏦', sector: 'Finance', keywords: [/bank/i, /financ/i, /payment/i, /credit.*card/i, /swift/i, /crypto.*exchange/i, /defi/i] },
+  { target: 'Tech Companies', country: 'GLOBAL', flag: '💻', sector: 'Technology', keywords: [/microsoft/i, /google/i, /apple/i, /amazon/i, /meta\b/i, /oracle/i, /cisco/i, /fortinet/i, /palo alto/i, /ivanti/i] },
+  { target: 'Education', country: 'GLOBAL', flag: '🎓', sector: 'Education', keywords: [/university/i, /school/i, /education/i, /academic/i, /student/i] },
+  { target: 'Critical Infrastructure', country: 'GLOBAL', flag: '🏗️', sector: 'Infrastructure', keywords: [/infrastructure/i, /scada/i, /ics\b/i, /ot\b.*security/i, /operational.*technology/i, /power.*grid/i, /water.*treatment/i] },
 ];
 
 const ATTACKER_PATTERNS: { name: string; country: string; keywords: RegExp[] }[] = [
@@ -48,6 +54,9 @@ const ATTACKER_PATTERNS: { name: string; country: string; keywords: RegExp[] }[]
   { name: 'China', country: 'China', keywords: [/china/i, /chinese/i, /beijing/i, /pla\b/i] },
   { name: 'Iran', country: 'Iran', keywords: [/iran/i, /iranian/i, /tehran/i, /irgc/i] },
   { name: 'N. Korea', country: 'N. Korea', keywords: [/north korea/i, /dprk/i, /pyongyang/i] },
+  { name: 'Ransomware', country: 'Unknown', keywords: [/ransomware/i, /lockbit/i, /blackcat/i, /alphv/i, /cl0p/i, /play.*ransom/i, /akira/i] },
+  { name: 'Hacktivists', country: 'Unknown', keywords: [/hacktivist/i, /anonymous/i, /ddos.*attack/i, /defac/i] },
+  { name: 'Unknown Actor', country: 'Unknown', keywords: [/threat.*actor/i, /attacker/i, /hacker/i, /breach/i, /exploit.*attack/i, /zero.*day/i] },
 ];
 
 function extractTopTargets(clusters: ThreatCluster[]): TargetEntry[] {
@@ -96,32 +105,47 @@ function extractTopTargets(clusters: ThreatCluster[]): TargetEntry[] {
 }
 
 const ATTACKER_COLOURS: Record<string, string> = {
-  Russia: '#ff1744',
-  China: '#ff6d00',
-  'N. Korea': '#ffc107',
-  Iran: '#7c4dff',
+  Russia: '#E00000',
+  China: '#D43A1A',
+  'N. Korea': '#C46A2A',
+  Iran: '#8B0A0A',
 };
 
 export function TopTargetsPanel() {
-  const { clusters } = useCyberStore();
-  const targets = extractTopTargets(clusters);
+  const { clusters, timeFilter } = useCyberStore();
+  const filteredClusters = filterByTime(clusters, timeFilter, (c) => c.primary.publishedAt);
+  const targets = extractTopTargets(filteredClusters);
+
+  const displayTargets = targets.length > 0 ? targets : filteredClusters
+    .filter((c) => c.severity === 'critical' || c.severity === 'high')
+    .slice(0, 6)
+    .map((c) => ({
+      target: c.primary.title.length > 45 ? c.primary.title.slice(0, 45) + '...' : c.primary.title,
+      country: '',
+      flag: '🎯',
+      sector: 'Threat',
+      attacker: c.primary.source,
+      attackerCountry: '',
+      severity: c.severity,
+      sourceCount: c.sourceCount,
+    }));
 
   return (
     <div className="hud-panel h-full flex flex-col overflow-hidden">
       <div className="hud-panel-header flex-shrink-0">
         <span className="hud-panel-title">🎯 TOP TARGETS</span>
-        <span className="text-[9px] font-mono text-gray-500">{targets.length} pairs</span>
+        <span className="text-[9px] font-mono text-gray-500">{displayTargets.length} pairs</span>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {targets.length === 0 ? (
+        {displayTargets.length === 0 ? (
           <div className="p-3 text-center">
             <span className="text-gray-600 text-[10px] font-mono">Analysing feeds...</span>
           </div>
         ) : (
           <div className="p-1 space-y-0.5">
-            {targets.map((t, i) => {
-              const atkColour = ATTACKER_COLOURS[t.attackerCountry] || '#9e9e9e';
+            {displayTargets.map((t, i) => {
+              const atkColour = ATTACKER_COLOURS[t.attackerCountry] || '#8A8F98';
               return (
                 <div
                   key={`${t.target}-${t.attacker}-${i}`}

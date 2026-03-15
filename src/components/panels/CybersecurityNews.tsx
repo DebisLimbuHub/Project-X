@@ -1,7 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { ThreatSeverity } from '@/types';
 import { sanitiseUrl, truncate } from '@/utils/sanitise';
-import { LiveChannelsPanel } from '@/components/panels/LiveChannelsPanel';
+import { useCyberStore } from '@/store';
+import { LIVE_CHANNELS } from '@/config/liveChannels';
+import { getChannelWebsiteUrl } from '@/utils/liveChannelEmbed';
+import { useYoutubeLiveUrls } from '@/hooks/useYoutubeLiveUrls';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -142,7 +145,7 @@ const MOCK_CHANNELS: NewsChannel[] = [
       'ISC Stormcast: New Golang malware targeting Linux servers',
       'SANS FOR508 updated — DFIR course now covers cloud forensics',
     ],
-    color: '#00e5ff',
+    color: '#E01515',
   },
   {
     id: 'krebs',
@@ -155,7 +158,7 @@ const MOCK_CHANNELS: NewsChannel[] = [
       'Feds charge man with stealing $65M via SIM swapping',
       'Fake browser updates push Lumma Stealer infostealer',
     ],
-    color: '#ff9800',
+    color: '#D43A1A',
   },
   {
     id: 'darkreading',
@@ -168,7 +171,7 @@ const MOCK_CHANNELS: NewsChannel[] = [
       'Why the CISO role is becoming impossible to fill',
       'AI-generated phishing attacks are 40% more effective',
     ],
-    color: '#7c4dff',
+    color: '#8B0A0A',
   },
   {
     id: 'secaffairs',
@@ -181,7 +184,7 @@ const MOCK_CHANNELS: NewsChannel[] = [
       'China-linked Salt Typhoon found in additional US telcos',
       'New ICS malware targets European water treatment facilities',
     ],
-    color: '#ff5722',
+    color: '#E01515',
   },
   {
     id: 'bleeping',
@@ -194,7 +197,7 @@ const MOCK_CHANNELS: NewsChannel[] = [
       'LockBit 4.0 builder leaked — new variants expected',
       'Windows SmartScreen bypass exploited as zero-day',
     ],
-    color: '#ff1744',
+    color: '#E00000',
   },
   {
     id: 'thhn',
@@ -207,7 +210,7 @@ const MOCK_CHANNELS: NewsChannel[] = [
       'Critical flaw in Apache Struts actively exploited in the wild',
       'GitHub Actions poisoning attack targets open-source CI/CD',
     ],
-    color: '#2196f3',
+    color: '#8B0A0A',
   },
   {
     id: 'talos',
@@ -220,7 +223,7 @@ const MOCK_CHANNELS: NewsChannel[] = [
       'TinyTurla-NG: New Turla campaign targets European NGOs',
       'Talos discovers novel DNS-over-HTTPS C2 beaconing technique',
     ],
-    color: '#00e676',
+    color: '#4A6B3F',
   },
   {
     id: 'mandiant',
@@ -233,7 +236,7 @@ const MOCK_CHANNELS: NewsChannel[] = [
       'UNC4841 expands Barracuda ESG exploitation to new regions',
       'M-Trends 2025: Dwell time drops to 10 days — detection improving',
     ],
-    color: '#ff6d00',
+    color: '#D43A1A',
   },
 ];
 
@@ -303,11 +306,11 @@ const MOCK_TICKER_ITEMS: TickerItem[] = [
 // ─── Severity Config ──────────────────────────────────────────────────────────
 
 const SEVERITY_CONFIG: Record<ThreatSeverity, { label: string; colour: string; bg: string; border: string }> = {
-  critical: { label: 'CRITICAL', colour: '#ff1744', bg: 'rgba(255,23,68,0.12)', border: 'rgba(255,23,68,0.35)' },
-  high:     { label: 'HIGH',     colour: '#ff5722', bg: 'rgba(255,87,34,0.12)', border: 'rgba(255,87,34,0.35)' },
-  medium:   { label: 'MEDIUM',   colour: '#ff9800', bg: 'rgba(255,152,0,0.12)', border: 'rgba(255,152,0,0.35)' },
-  low:      { label: 'LOW',      colour: '#ffc107', bg: 'rgba(255,193,7,0.12)', border: 'rgba(255,193,7,0.35)' },
-  info:     { label: 'INFO',     colour: '#00bcd4', bg: 'rgba(0,188,212,0.12)', border: 'rgba(0,188,212,0.35)' },
+  critical: { label: 'CRITICAL', colour: '#E00000', bg: 'rgba(224,0,0,0.12)',   border: 'rgba(224,0,0,0.35)' },
+  high:     { label: 'HIGH',     colour: '#E01515', bg: 'rgba(224,21,21,0.12)', border: 'rgba(224,21,21,0.35)' },
+  medium:   { label: 'MEDIUM',   colour: '#D43A1A', bg: 'rgba(212,58,26,0.12)', border: 'rgba(212,58,26,0.35)' },
+  low:      { label: 'LOW',      colour: '#C46A2A', bg: 'rgba(196,106,42,0.12)',border: 'rgba(196,106,42,0.35)' },
+  info:     { label: 'INFO',     colour: '#8A8F98', bg: 'rgba(138,143,152,0.12)',border: 'rgba(138,143,152,0.35)' },
 };
 
 const SEV_ORDER: Record<ThreatSeverity, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
@@ -415,7 +418,7 @@ function FeaturedAlert({ alert }: { alert: NewsAlert }) {
     <div
       className="rounded border flex flex-col gap-3 p-5 h-full"
       style={{
-        background: 'linear-gradient(135deg, #0d1035 0%, #1a0a2e 60%, #0f1420 100%)',
+        background: 'linear-gradient(135deg, #050608 0%, #0B0D10 60%, #111419 100%)',
         borderColor: cfg.border,
         boxShadow: `0 0 30px ${cfg.colour}10`,
       }}
@@ -501,10 +504,10 @@ function StatsSidebar({ alerts }: { alerts: NewsAlert[] }) {
       <div className="text-[9px] font-mono text-gray-600 uppercase tracking-widest pb-1 border-b border-cyber-border">
         Today's Intelligence
       </div>
-      <StatBox value={alerts.length} label="Total Alerts Today" colour="#00e5ff" icon="📡" />
-      <StatBox value={critical} label="Critical Severity" colour="#ff1744" icon="🔴" />
-      <StatBox value={apts} label="APT Groups Active" colour="#ff5722" icon="🎯" />
-      <StatBox value={zeroDays} label="Zero-Days Detected" colour="#7c4dff" icon="⚡" />
+      <StatBox value={alerts.length} label="Total Alerts Today" colour="#E01515" icon="📡" />
+      <StatBox value={critical} label="Critical Severity" colour="#E00000" icon="🔴" />
+      <StatBox value={apts} label="APT Groups Active" colour="#E01515" icon="🎯" />
+      <StatBox value={zeroDays} label="Zero-Days Detected" colour="#8B0A0A" icon="⚡" />
       <div className="mt-auto pt-3 border-t border-cyber-border">
         <div className="text-[8px] font-mono text-gray-700 leading-relaxed">
           Data reflects mock intelligence feed. Connect live APIs for real-time data.
@@ -531,7 +534,7 @@ function FilterBar({ threatFilter, onThreatFilter, sortBy, onSortBy, resultCount
       <div className="flex gap-1 flex-wrap">
         {levels.map((lvl) => {
           const isActive = threatFilter === lvl;
-          const colour = lvl === 'all' ? '#9e9e9e' : SEVERITY_CONFIG[lvl].colour;
+          const colour = lvl === 'all' ? '#8A8F98' : SEVERITY_CONFIG[lvl].colour;
           return (
             <button
               key={lvl}
@@ -539,7 +542,7 @@ function FilterBar({ threatFilter, onThreatFilter, sortBy, onSortBy, resultCount
               className="px-2 py-0.5 text-[8px] font-mono uppercase rounded-sm border transition-colors"
               style={{
                 color: isActive ? colour : '#555',
-                borderColor: isActive ? colour : '#1e2a3a',
+                borderColor: isActive ? colour : 'rgba(224,21,21,0.15)',
                 background: isActive ? `${colour}15` : 'transparent',
               }}
             >
@@ -712,7 +715,7 @@ function LiveTicker() {
   const doubled = [...MOCK_TICKER_ITEMS, ...MOCK_TICKER_ITEMS];
 
   return (
-    <div className="flex-shrink-0 border-t border-threat-critical/30 bg-[rgba(255,23,68,0.06)] overflow-hidden">
+    <div className="flex-shrink-0 border-t border-threat-critical/30 bg-[rgba(224,21,21,0.06)] overflow-hidden">
       <div className="flex items-center">
         <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-threat-critical/15 border-r border-threat-critical/30">
           <span className="w-1.5 h-1.5 rounded-full bg-threat-critical animate-pulse" />
@@ -755,6 +758,179 @@ function ComingSoon({ label }: { label: string }) {
         <div className="text-[11px] font-mono text-gray-500">{label} — coming soon</div>
         <div className="text-[9px] font-mono text-gray-700 mt-1">Connect real APIs to enable this view</div>
       </div>
+    </div>
+  );
+}
+
+// ─── Full-Page Channels View ──────────────────────────────────────────────────
+
+function ChannelsPageView({ searchQuery }: { searchQuery: string }) {
+  const liveChannels = useCyberStore((state) => state.liveChannels);
+  const selectedChannelId = useCyberStore((state) => state.selectedChannelId);
+  const selectChannel = useCyberStore((state) => state.selectChannel);
+  const setLiveChannels = useCyberStore((state) => state.setLiveChannels);
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+
+  const liveUrls = useYoutubeLiveUrls();
+
+  useEffect(() => {
+    setLiveChannels(LIVE_CHANNELS);
+  }, [setLiveChannels]);
+
+  const categories = useMemo<string[]>(
+    () => ['all', ...new Set(liveChannels.map((c) => c.category))],
+    [liveChannels],
+  );
+
+  const filteredChannels = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return liveChannels.filter((ch) => {
+      const matchesCat = categoryFilter === 'all' || ch.category === categoryFilter;
+      if (!q) return matchesCat;
+      const hay = [ch.name, ch.region, ch.category, ...(ch.tags ?? [])].join(' ').toLowerCase();
+      return matchesCat && hay.includes(q);
+    });
+  }, [liveChannels, categoryFilter, searchQuery]);
+
+  const selectedChannel = useMemo(
+    () => filteredChannels.find((c) => c.id === selectedChannelId) ?? filteredChannels[0] ?? null,
+    [filteredChannels, selectedChannelId],
+  );
+
+  useEffect(() => {
+    if (filteredChannels.length === 0) return;
+    if (!selectedChannel) selectChannel(filteredChannels[0].id);
+  }, [filteredChannels, selectChannel, selectedChannel]);
+
+  const liveEntry = selectedChannel ? liveUrls[selectedChannel.id] : undefined;
+  const embedUrl = liveEntry?.embedUrl ?? null;
+  const websiteUrl = selectedChannel ? getChannelWebsiteUrl(selectedChannel) : null;
+  const popoutUrl = embedUrl ?? websiteUrl;
+
+  return (
+    <div className="max-w-5xl mx-auto p-4">
+      {/* Category filter buttons */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setCategoryFilter(cat)}
+            className={`px-3 py-1 text-[9px] font-mono uppercase tracking-wider rounded-sm border transition-colors ${
+              categoryFilter === cat
+                ? 'border-accent-cyan/40 bg-accent-cyan/10 text-accent-cyan'
+                : 'border-cyber-border text-gray-500 hover:text-gray-300 hover:bg-cyber-hover'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* Channel list */}
+      <div className="space-y-1 mb-6">
+        {filteredChannels.map((channel) => {
+          const entry = liveUrls[channel.id];
+          return (
+            <button
+              key={channel.id}
+              onClick={() => selectChannel(channel.id)}
+              className={`w-full flex items-center justify-between py-3 px-4 rounded-md transition-all text-left ${
+                selectedChannel?.id === channel.id
+                  ? 'border-l-2 border-accent-cyan bg-accent-cyan/5'
+                  : 'border-l-2 border-transparent hover:bg-cyber-hover/50'
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-sm font-mono text-gray-200 truncate">{channel.name}</span>
+                <span className="text-xs font-mono text-gray-500 flex-shrink-0">{channel.region}</span>
+                {entry?.isLive && (
+                  <span className="text-[8px] font-mono text-threat-critical bg-threat-critical/10 border border-threat-critical/30 px-1.5 py-0.5 rounded flex-shrink-0">LIVE</span>
+                )}
+                {entry && !entry.isLive && entry.embedUrl && (
+                  <span className="text-[8px] font-mono text-gray-500 bg-cyber-card border border-cyber-border px-1.5 py-0.5 rounded flex-shrink-0">REPLAY</span>
+                )}
+                {entry && !entry.embedUrl && (
+                  <span className="text-[8px] font-mono text-gray-600 bg-cyber-card border border-cyber-border px-1.5 py-0.5 rounded flex-shrink-0">OFFLINE</span>
+                )}
+              </div>
+              <span className="text-[9px] font-mono px-2 py-0.5 rounded border border-cyber-border text-gray-400 uppercase flex-shrink-0 ml-2">
+                {channel.category}
+              </span>
+            </button>
+          );
+        })}
+
+        {filteredChannels.length === 0 && (
+          <div className="py-8 text-center text-[10px] font-mono text-gray-600">
+            No channels match — clear the filter to restore feeds.
+          </div>
+        )}
+      </div>
+
+      {/* Video player */}
+      {selectedChannel && (
+        <div className="border border-cyber-border rounded-md overflow-hidden bg-cyber-card">
+          {/* Channel header bar */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-cyber-border">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-mono text-accent-cyan font-semibold">{selectedChannel.name}</span>
+              <span className="text-xs font-mono text-gray-500">{selectedChannel.region}</span>
+              {liveEntry?.isLive && (
+                <span className="text-[8px] font-mono text-threat-critical bg-threat-critical/10 border border-threat-critical/30 px-1.5 py-0.5 rounded">LIVE</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {websiteUrl && (
+                <a
+                  href={websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-mono text-accent-cyan border border-accent-cyan/30 px-2 py-1 rounded hover:bg-accent-cyan/10"
+                >
+                  OPEN SOURCE
+                </a>
+              )}
+              {popoutUrl && (
+                <a
+                  href={popoutUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-mono text-gray-400 border border-cyber-border px-2 py-1 rounded hover:bg-cyber-hover"
+                >
+                  POP OUT
+                </a>
+              )}
+            </div>
+          </div>
+          {/* Video — fixed height for reliable fill */}
+          {embedUrl ? (
+            <div style={{ width: '100%', height: '540px' }}>
+              <iframe
+                key={`${selectedChannel.id}-${embedUrl}`}
+                src={embedUrl}
+                width="100%"
+                height="100%"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                style={{ border: 'none', display: 'block' }}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center bg-black" style={{ height: '540px' }}>
+              <div className="text-center">
+                <span className="text-gray-500 text-sm font-mono block mb-1">
+                  {liveEntry === undefined ? 'Loading stream...' : 'Stream offline'}
+                </span>
+                <span className="text-gray-600 text-xs font-mono">
+                  {selectedChannel.name} is not currently broadcasting live
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -838,8 +1014,8 @@ export function CybersecurityNews() {
         )}
 
         {activeTab === 'channels' && (
-          <div className="flex-1 p-4">
-            <LiveChannelsPanel searchQuery={searchQuery} showSearchInput={false} />
+          <div className="flex-1 overflow-auto">
+            <ChannelsPageView searchQuery={searchQuery} />
           </div>
         )}
 

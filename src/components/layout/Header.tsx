@@ -5,11 +5,17 @@ export function Header() {
   const { threatLevel, setSearchOpen } = useCyberStore();
 
   return (
-    <header className="h-10 bg-cyber-panel border-b border-cyber-border flex items-center px-3 gap-4 flex-shrink-0">
+    <header className="h-10 border-b border-cyber-border flex items-center px-3 gap-4 flex-shrink-0" style={{ background: 'rgba(5, 6, 8, 0.45)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
       {/* Logo & Title */}
       <div className="flex items-center gap-2">
-        <span className="text-accent-cyan text-lg">◉</span>
-        <h1 className="font-display text-sm font-semibold tracking-wider text-gray-200">
+        <span
+          className="text-[#E01515] text-lg"
+          style={{ filter: 'drop-shadow(0 0 6px rgba(224, 21, 21, 0.6))' }}
+        >◉</span>
+        <h1
+          className="font-display text-sm font-semibold tracking-wider text-[#E8E8E8]"
+          style={{ textShadow: '0 0 10px rgba(224, 21, 21, 0.7), 0 0 3px rgba(224, 21, 21, 0.9)' }}
+        >
           CYBER MONITOR
         </h1>
         <span className="text-[9px] font-mono text-gray-600 bg-cyber-card px-1.5 py-0.5 rounded">

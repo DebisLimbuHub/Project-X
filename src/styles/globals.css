@@ -2,140 +2,189 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===== BASE STYLES ===== */
 @layer base {
   * {
     scrollbar-width: thin;
-    scrollbar-color: #1e2a3a #0a0e17;
+    scrollbar-color: rgba(224, 21, 21, 0.25) #050608;
   }
-
-  *::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  *::-webkit-scrollbar-track {
-    background: #0a0e17;
-  }
-
-  *::-webkit-scrollbar-thumb {
-    background: #1e2a3a;
-    border-radius: 3px;
-  }
-
-  *::-webkit-scrollbar-thumb:hover {
-    background: #2a4a6b;
-  }
+  *::-webkit-scrollbar { width: 5px; height: 5px; }
+  *::-webkit-scrollbar-track { background: #050608; }
+  *::-webkit-scrollbar-thumb { background: rgba(224, 21, 21, 0.25); border-radius: 3px; }
+  *::-webkit-scrollbar-thumb:hover { background: rgba(224, 21, 21, 0.45); }
 
   body {
-    background-color: #0a0e17;
-    color: #e0e0e0;
+    background-color: #050608;
+    color: #E8E8E8;
     overflow: hidden;
   }
 
   ::selection {
-    background: rgba(0, 229, 255, 0.2);
-    color: #00e5ff;
+    background: rgba(224, 21, 21, 0.25);
+    color: #E01515;
   }
 }
 
-/* ===== HUD PANEL COMPONENT ===== */
 @layer components {
+  /* ===== TRANSLUCENT HUD PANELS ===== */
   .hud-panel {
-    @apply bg-cyber-panel border border-cyber-border rounded relative overflow-hidden;
+    background: rgba(5, 6, 8, 0.45);
+    border: 1px solid rgba(224, 21, 21, 0.12);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 
   .hud-panel::before {
     content: '';
-    @apply absolute top-0 left-0 w-full h-[2px];
-    background: linear-gradient(90deg, transparent, #00e5ff, transparent);
-    opacity: 0.5;
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(224, 21, 21, 0.3), transparent);
   }
 
   .hud-panel-header {
-    @apply flex items-center justify-between px-3 py-2 border-b border-cyber-border;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(224, 21, 21, 0.1);
   }
 
+  /* WHITE TEXT WITH RED OUTLINE/GLOW */
   .hud-panel-title {
-    @apply text-xs font-mono font-semibold uppercase tracking-widest text-accent-cyan;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #E8E8E8;
+    text-shadow: 0 0 8px rgba(224, 21, 21, 0.6), 0 0 2px rgba(224, 21, 21, 0.8);
   }
 
   .hud-panel-body {
-    @apply p-3;
+    padding: 12px;
   }
 
   /* Threat badges */
   .threat-badge {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-mono uppercase tracking-wider;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .threat-badge-critical {
-    @apply bg-threat-critical/15 text-threat-critical border border-threat-critical/30;
+    background: rgba(224, 0, 0, 0.15);
+    color: #E00000;
+    border: 1px solid rgba(224, 0, 0, 0.3);
+    text-shadow: 0 0 6px rgba(224, 0, 0, 0.5);
   }
 
   .threat-badge-high {
-    @apply bg-threat-high/15 text-threat-high border border-threat-high/30;
+    background: rgba(224, 21, 21, 0.12);
+    color: #E01515;
+    border: 1px solid rgba(224, 21, 21, 0.25);
+    text-shadow: 0 0 6px rgba(224, 21, 21, 0.4);
   }
 
   .threat-badge-medium {
-    @apply bg-threat-medium/15 text-threat-medium border border-threat-medium/30;
+    background: rgba(212, 58, 26, 0.1);
+    color: #D43A1A;
+    border: 1px solid rgba(212, 58, 26, 0.25);
   }
 
   .threat-badge-low {
-    @apply bg-threat-low/15 text-threat-low border border-threat-low/30;
+    background: rgba(196, 106, 42, 0.1);
+    color: #C46A2A;
+    border: 1px solid rgba(196, 106, 42, 0.2);
   }
 
   .threat-badge-info {
-    @apply bg-threat-info/15 text-threat-info border border-threat-info/30;
+    background: rgba(138, 143, 152, 0.1);
+    color: #8A8F98;
+    border: 1px solid rgba(138, 143, 152, 0.2);
   }
 
-  /* NEW tag (activity tracking) */
   .new-badge {
-    @apply inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase
-           bg-accent-cyan/20 text-accent-cyan border border-accent-cyan/30 rounded-sm
-           animate-glow;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    font-size: 9px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(224, 21, 21, 0.15);
+    color: #E01515;
+    border: 1px solid rgba(224, 21, 21, 0.25);
+    border-radius: 2px;
+    animation: glow 2s ease-in-out infinite alternate;
   }
 
-  /* Map overrides */
+  /* ===== LEAFLET MAP OVERRIDES ===== */
   .leaflet-container {
-    background: #0a0e17 !important;
+    background: #050608 !important;
     font-family: 'Inter', sans-serif;
   }
 
   .leaflet-popup-content-wrapper {
-    @apply bg-cyber-card border border-cyber-border rounded-sm shadow-lg;
-    color: #e0e0e0;
+    background: rgba(8, 9, 12, 0.75) !important;
+    border: 1px solid rgba(224, 21, 21, 0.2) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 0 20px rgba(224, 21, 21, 0.15) !important;
+    color: #E8E8E8;
+    backdrop-filter: blur(12px);
   }
 
   .leaflet-popup-tip {
-    background: #141b2d;
-    border-color: #1e2a3a;
+    background: rgba(8, 9, 12, 0.75) !important;
   }
 
   .leaflet-control-zoom a {
-    @apply bg-cyber-panel border-cyber-border text-gray-400;
+    background: rgba(8, 9, 12, 0.55) !important;
+    border-color: rgba(224, 21, 21, 0.15) !important;
+    color: #8A8F98 !important;
   }
 
   .leaflet-control-zoom a:hover {
-    @apply bg-cyber-hover text-accent-cyan;
+    background: rgba(224, 21, 21, 0.1) !important;
+    color: #E01515 !important;
   }
 }
 
-/* ===== ANIMATIONS ===== */
 @layer utilities {
-  .animate-threat-pulse {
-    animation: threat-pulse 2s ease-in-out infinite;
+  .text-glow-red {
+    text-shadow: 0 0 8px rgba(224, 21, 21, 0.6), 0 0 2px rgba(224, 21, 21, 0.8);
   }
 
   .text-glow-cyan {
-    text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
-  }
-
-  .text-glow-red {
-    text-shadow: 0 0 8px rgba(255, 23, 68, 0.5);
+    text-shadow: 0 0 8px rgba(224, 21, 21, 0.6), 0 0 2px rgba(224, 21, 21, 0.8);
   }
 
   .border-glow-cyan {
-    box-shadow: 0 0 10px rgba(0, 229, 255, 0.2), inset 0 0 10px rgba(0, 229, 255, 0.05);
+    box-shadow: 0 0 8px rgba(224, 21, 21, 0.15), inset 0 0 8px rgba(224, 21, 21, 0.05);
   }
+
+  .animate-scanline {
+    animation: scanline 8s linear infinite;
+  }
+}
+
+@keyframes scanline {
+  0% { top: -2px; }
+  100% { top: 100%; }
+}
+
+@keyframes grain-flicker {
+  0%   { transform: translate(0, 0); }
+  25%  { transform: translate(-2px, 1px); }
+  50%  { transform: translate(1px, -1px); }
+  75%  { transform: translate(-1px, 2px); }
+  100% { transform: translate(2px, -2px); }
 }

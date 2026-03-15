@@ -1,14 +1,6 @@
 import type { LiveChannel, LiveChannelSource } from '@/types';
 import { sanitiseUrl } from '@/utils/sanitise';
 
-function getOrigin() {
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return window.location.origin;
-  }
-
-  return 'http://localhost';
-}
-
 export function isYouTubeSource(source: LiveChannelSource): boolean {
   return (
     source.provider === 'youtube-video' ||
@@ -30,8 +22,7 @@ export function buildYouTubeEmbedUrl(source: LiveChannelSource): string {
     autoplay: '1',
     mute: '1',
     playsinline: '1',
-    enablejsapi: '1',
-    origin: getOrigin(),
+    rel: '0',
   });
 
   if (source.provider === 'youtube-video') {
@@ -41,11 +32,11 @@ export function buildYouTubeEmbedUrl(source: LiveChannelSource): string {
 
   if (source.provider === 'youtube-playlist') {
     if (!source.playlistId) return '';
-    params.set('listType', 'playlist');
     params.set('list', source.playlistId);
-    return `https://www.youtube.com/embed?${params.toString()}`;
+    return `https://www.youtube.com/embed/videoseries?${params.toString()}`;
   }
 
+  // youtube-user-uploads
   if (!source.uploadsUser) return '';
   params.set('listType', 'user_uploads');
   params.set('list', source.uploadsUser);

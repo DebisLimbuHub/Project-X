@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useCyberStore } from '@/store';
+import { filterByTime } from '@/utils/time-filter';
 import { formatDistanceToNow } from 'date-fns';
 import type { ThreatCluster } from '@/types';
 
@@ -29,15 +30,15 @@ interface GroupSummary {
 }
 
 const RANSOMWARE_PATTERNS: { name: string; patterns: RegExp[]; colour: string }[] = [
-  { name: 'LockBit', patterns: [/lockbit/i], colour: '#ff1744' },
-  { name: 'BlackCat/ALPHV', patterns: [/blackcat/i, /alphv/i], colour: '#ff5722' },
-  { name: 'Cl0p', patterns: [/cl0p/i, /clop/i], colour: '#ff6d00' },
-  { name: 'Play', patterns: [/\bplay\b.*ransomware/i, /play\s+group/i], colour: '#ff9800' },
-  { name: 'Black Basta', patterns: [/black\s*basta/i], colour: '#e91e63' },
-  { name: 'Akira', patterns: [/akira.*ransomware/i, /akira.*attack/i], colour: '#9c27b0' },
-  { name: 'RansomHub', patterns: [/ransomhub/i], colour: '#673ab7' },
-  { name: 'Medusa', patterns: [/medusa.*ransomware/i, /medusa.*attack/i], colour: '#3f51b5' },
-  { name: 'Generic', patterns: [/ransomware/i], colour: '#607d8b' },
+  { name: 'LockBit', patterns: [/lockbit/i], colour: '#E00000' },
+  { name: 'BlackCat/ALPHV', patterns: [/blackcat/i, /alphv/i], colour: '#E01515' },
+  { name: 'Cl0p', patterns: [/cl0p/i, /clop/i], colour: '#D43A1A' },
+  { name: 'Play', patterns: [/\bplay\b.*ransomware/i, /play\s+group/i], colour: '#D43A1A' },
+  { name: 'Black Basta', patterns: [/black\s*basta/i], colour: '#E01515' },
+  { name: 'Akira', patterns: [/akira.*ransomware/i, /akira.*attack/i], colour: '#8B0A0A' },
+  { name: 'RansomHub', patterns: [/ransomhub/i], colour: '#8B0A0A' },
+  { name: 'Medusa', patterns: [/medusa.*ransomware/i, /medusa.*attack/i], colour: '#8B0A0A' },
+  { name: 'Generic', patterns: [/ransomware/i], colour: '#8A8F98' },
 ];
 
 function extractRansomwareData(clusters: ThreatCluster[]): GroupSummary[] {
@@ -83,14 +84,15 @@ function extractRansomwareData(clusters: ThreatCluster[]): GroupSummary[] {
 }
 
 export function RansomwareTrackerPanel() {
-  const { clusters } = useCyberStore();
+  const { clusters, timeFilter } = useCyberStore();
   const [groups, setGroups] = useState<GroupSummary[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
     if (clusters.length === 0) return;
-    setGroups(extractRansomwareData(clusters));
-  }, [clusters]);
+    const filteredClusters = filterByTime(clusters, timeFilter, (c) => c.primary.publishedAt);
+    setGroups(extractRansomwareData(filteredClusters));
+  }, [clusters, timeFilter]);
 
   const totalHits = groups.reduce((sum, g) => sum + g.count, 0);
 

@@ -1,4 +1,5 @@
 import { useCyberStore } from '@/store';
+import { filterByTime } from '@/utils/time-filter';
 import type { ThreatCluster } from '@/types';
 
 /**
@@ -55,8 +56,9 @@ function countCountryMentions(clusters: ThreatCluster[]): { country: string; fla
 }
 
 export function AttackOriginsPanel() {
-  const { clusters } = useCyberStore();
-  const origins = countCountryMentions(clusters);
+  const { clusters, timeFilter } = useCyberStore();
+  const filteredClusters = filterByTime(clusters, timeFilter, (c) => c.primary.publishedAt);
+  const origins = countCountryMentions(filteredClusters);
   const totalMentions = origins.reduce((sum, o) => sum + o.count, 0);
 
   return (
@@ -98,10 +100,10 @@ export function AttackOriginsPanel() {
                   className="h-full rounded-full transition-all duration-700"
                   style={{
                     width: `${barWidth}%`,
-                    background: country === 'Russia' ? '#ff1744' :
-                               country === 'China' ? '#ff6d00' :
-                               country === 'North Korea' ? '#ffc107' :
-                               '#7c4dff',
+                    background: country === 'Russia' ? '#E00000' :
+                               country === 'China' ? '#D43A1A' :
+                               country === 'North Korea' ? '#C46A2A' :
+                               '#8B0A0A',
                   }}
                 />
               </div>

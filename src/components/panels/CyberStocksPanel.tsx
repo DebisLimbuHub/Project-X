@@ -147,7 +147,7 @@ export function CyberStocksPanel() {
 function StockRow({ quote }: { quote: QuoteData }) {
   const isPositive = quote.change > 0;
   const isNegative = quote.change < 0;
-  const colour = isPositive ? '#00e676' : isNegative ? '#ff1744' : '#9e9e9e';
+  const colour = isPositive ? '#4A6B3F' : isNegative ? '#E00000' : '#8A8F98';
   const arrow = isPositive ? '▲' : isNegative ? '▼' : '';
 
   return (

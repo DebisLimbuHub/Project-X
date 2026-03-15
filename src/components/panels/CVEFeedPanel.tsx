@@ -8,11 +8,11 @@ import type { CVEEntry, ThreatSeverity } from '@/types';
  */
 
 const SEVERITY_COLOURS: Record<ThreatSeverity, string> = {
-  critical: '#ff1744',
-  high: '#ff5722',
-  medium: '#ff9800',
-  low: '#ffc107',
-  info: '#00bcd4',
+  critical: '#E00000',
+  high: '#E01515',
+  medium: '#D43A1A',
+  low: '#C46A2A',
+  info: '#8A8F98',
 };
 
 export function CVEFeedPanel() {

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useCyberStore } from '@/store';
+import { filterByTime } from '@/utils/time-filter';
 import type { ThreatSeverity, SectorRisk } from '@/types';
 
 /**
@@ -35,11 +36,11 @@ const SECTOR_ICONS: Record<string, string> = {
 };
 
 const RISK_COLOURS: Record<string, string> = {
-  critical: '#ff1744',
-  high: '#ff5722',
-  medium: '#ff9800',
-  low: '#ffc107',
-  minimal: '#4caf50',
+  critical: '#E00000',
+  high: '#E01515',
+  medium: '#D43A1A',
+  low: '#C46A2A',
+  minimal: '#4A6B3F',
 };
 
 function getRiskLabel(level: number): { label: string; colour: string } {
@@ -51,11 +52,13 @@ function getRiskLabel(level: number): { label: string; colour: string } {
 }
 
 export function InfraRiskPanel() {
-  const { clusters, cves, sectorRisks, setSectorRisks } = useCyberStore();
+  const { clusters, cves, sectorRisks, setSectorRisks, timeFilter } = useCyberStore();
 
   // Compute sector risk from live data
   useEffect(() => {
     if (clusters.length === 0) return;
+
+    const filteredClusters = filterByTime(clusters, timeFilter, (c) => c.primary.publishedAt);
 
     const updatedRisks: SectorRisk[] = Object.entries(SECTOR_KEYWORDS).map(([sector, patterns]) => {
       let mentions = 0;
@@ -63,7 +66,7 @@ export function InfraRiskPanel() {
       const matchedAPTs = new Set<string>();
 
       // Scan feed clusters
-      for (const cluster of clusters) {
+      for (const cluster of filteredClusters) {
         const text = `${cluster.primary.title} ${cluster.primary.description}`;
         for (const pattern of patterns) {
           if (pattern.test(text)) {
@@ -113,7 +116,7 @@ export function InfraRiskPanel() {
     // Sort by risk level descending
     updatedRisks.sort((a, b) => b.riskLevel - a.riskLevel);
     setSectorRisks(updatedRisks);
-  }, [clusters, cves, setSectorRisks]);
+  }, [clusters, cves, timeFilter, setSectorRisks]); // cves intentionally unfiltered (catalog, not stream)
 
   return (
     <div className="hud-panel h-full flex flex-col overflow-hidden">

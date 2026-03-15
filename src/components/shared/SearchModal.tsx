@@ -155,28 +155,34 @@ export function SearchModal() {
   if (!searchOpen) return null;
 
   const SEVERITY_COLOURS: Record<string, string> = {
-    critical: '#ff1744', high: '#ff5722', medium: '#ff9800', low: '#ffc107', info: '#00bcd4',
+    critical: '#E00000', high: '#E01515', medium: '#D43A1A', low: '#C46A2A', info: '#8A8F98',
   };
 
   const TYPE_LABELS: Record<string, { label: string; colour: string }> = {
-    cve: { label: 'CVE', colour: '#ff5722' },
-    apt: { label: 'APT', colour: '#ff1744' },
-    news: { label: 'NEWS', colour: '#00bcd4' },
-    infra: { label: 'INFRA', colour: '#ff9800' },
+    cve: { label: 'CVE', colour: '#D43A1A' },
+    apt: { label: 'APT', colour: '#E00000' },
+    news: { label: 'NEWS', colour: '#E01515' },
+    infra: { label: 'INFRA', colour: '#C46A2A' },
   };
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[2000]"
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[2000]"
         onClick={() => setSearchOpen(false)}
       />
 
       {/* Modal */}
       <div className="fixed top-[15%] left-1/2 -translate-x-1/2 w-full max-w-xl z-[2001]">
-        <div className="bg-cyber-panel border border-cyber-border rounded-md shadow-2xl overflow-hidden"
-          style={{ boxShadow: '0 0 40px rgba(0, 229, 255, 0.1)' }}
+        <div
+          className="border border-cyber-border rounded-md overflow-hidden"
+          style={{
+            background: 'rgba(8, 9, 12, 0.70)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            boxShadow: '0 0 40px rgba(224, 21, 21, 0.1), 0 0 80px rgba(224, 21, 21, 0.05)',
+          }}
         >
           {/* Search Input */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-cyber-border">
@@ -246,8 +252,8 @@ export function SearchModal() {
                           <span
                             className="text-[7px] font-mono font-bold px-1 py-0.5 rounded-sm"
                             style={{
-                              color: SEVERITY_COLOURS[result.severity] || '#9e9e9e',
-                              background: `${SEVERITY_COLOURS[result.severity] || '#9e9e9e'}15`,
+                              color: SEVERITY_COLOURS[result.severity] || '#8A8F98',
+                              background: `${SEVERITY_COLOURS[result.severity] || '#8A8F98'}15`,
                             }}
                           >
                             {result.severity.toUpperCase()}

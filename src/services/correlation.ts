@@ -51,7 +51,7 @@ export const SIGNAL_CONFIGS: Record<CyberSignalType, SignalConfig> = {
     name: 'Convergence',
     icon: '◉',
     description: 'Multiple independent feeds confirming the same threat',
-    minConfidence: 60,
+    minConfidence: 40,
     ttlMinutes: 120,
   },
   triangulation: {
@@ -59,7 +59,7 @@ export const SIGNAL_CONFIGS: Record<CyberSignalType, SignalConfig> = {
     name: 'Triangulation',
     icon: '△',
     description: 'Government + vendor + researcher sources aligned',
-    minConfidence: 75,
+    minConfidence: 50,
     ttlMinutes: 180,
   },
   velocity_spike: {
@@ -67,7 +67,7 @@ export const SIGNAL_CONFIGS: Record<CyberSignalType, SignalConfig> = {
     name: 'Velocity Spike',
     icon: '🔥',
     description: 'Threat mention rate accelerating rapidly',
-    minConfidence: 65,
+    minConfidence: 40,
     ttlMinutes: 60,
   },
   zero_day_signal: {
@@ -75,7 +75,7 @@ export const SIGNAL_CONFIGS: Record<CyberSignalType, SignalConfig> = {
     name: 'Zero-Day Signal',
     icon: '🔮',
     description: 'Unusual vendor activity suggesting undisclosed vulnerability',
-    minConfidence: 55,
+    minConfidence: 40,
     ttlMinutes: 240,
   },
   stealth_campaign: {
@@ -91,7 +91,7 @@ export const SIGNAL_CONFIGS: Record<CyberSignalType, SignalConfig> = {
     name: 'APT Surge',
     icon: '⚠',
     description: 'Multiple APT indicators in same sector/region',
-    minConfidence: 70,
+    minConfidence: 45,
     ttlMinutes: 240,
   },
   patch_gap: {
@@ -99,7 +99,7 @@ export const SIGNAL_CONFIGS: Record<CyberSignalType, SignalConfig> = {
     name: 'Patch Gap',
     icon: '🕳️',
     description: 'Critical CVE without vendor patch after 72h',
-    minConfidence: 80,
+    minConfidence: 50,
     ttlMinutes: 480,
   },
   infra_cascade: {
@@ -166,15 +166,15 @@ export function detectConvergence(clusters: ThreatCluster[]): CyberSignal[] {
   const signals: CyberSignal[] = [];
 
   for (const cluster of clusters) {
-    if (cluster.sourceCount >= 3) {
-      // Check if sources appeared within 30 minutes of each other
+    if (cluster.sourceCount >= 2) {
+      // Check if sources appeared within 2 hours of each other
       const times = [cluster.primary, ...cluster.related]
         .map((item) => new Date(item.publishedAt).getTime());
       const span = Math.max(...times) - Math.min(...times);
-      const withinWindow = span <= 30 * 60_000;
+      const withinWindow = span <= 120 * 60_000;
 
       if (withinWindow) {
-        const confidence = Math.min(60 + (cluster.sourceCount - 3) * 10, 95);
+        const confidence = Math.min(45 + (cluster.sourceCount - 2) * 10, 95);
         const signal = makeSignal(
           'convergence',
           confidence,
@@ -227,7 +227,7 @@ export function detectVelocitySpike(clusters: ThreatCluster[]): CyberSignal[] {
   const signals: CyberSignal[] = [];
 
   for (const cluster of clusters) {
-    if (cluster.velocity.level === 'spike' && cluster.velocity.trend === 'rising') {
+    if (cluster.velocity.level === 'spike' || (cluster.velocity.level === 'elevated' && cluster.sourceCount >= 2)) {
       const confidence = Math.min(65 + cluster.velocity.sourcesPerHour * 3, 95);
       const signal = makeSignal(
         'velocity_spike',
@@ -340,6 +340,27 @@ export function detectInfraCascade(
   return signals;
 }
 
+// ===== CRITICAL ALERT DETECTION =====
+
+export function detectCriticalAlerts(clusters: ThreatCluster[]): CyberSignal[] {
+  const signals: CyberSignal[] = [];
+  const criticals = clusters.filter((c) => c.severity === 'critical');
+
+  if (criticals.length >= 3) {
+    const signal = makeSignal(
+      'convergence',
+      55 + Math.min(criticals.length * 5, 30),
+      'high',
+      `${criticals.length} critical threats detected across feeds`,
+      `Multiple critical severity items active simultaneously`,
+      criticals.slice(0, 5).map((c) => c.primary.source),
+    );
+    if (signal) signals.push(signal);
+  }
+
+  return signals;
+}
+
 // ===== MASTER DETECTION FUNCTION =====
 
 export interface CorrelationInputs {
@@ -359,6 +380,7 @@ export function runCorrelationEngine(inputs: CorrelationInputs): CyberSignal[] {
   allSignals.push(...detectPatchGap(inputs.cves));
   allSignals.push(...detectRansomwareWave(inputs.ransomwareVictims));
   allSignals.push(...detectInfraCascade(inputs.outages, inputs.bgpAnomalies));
+  allSignals.push(...detectCriticalAlerts(inputs.clusters));
 
   // Deduplicate by type + similar title
   const seen = new Set<string>();

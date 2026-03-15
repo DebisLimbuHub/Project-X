@@ -22,12 +22,12 @@ import { UNDERSEA_CABLES } from '@/config/undersea-cables';
 
 function createAPTIcon(country: string): L.DivIcon {
   const colours: Record<string, string> = {
-    Russia: '#ff1744',
-    China: '#ff6d00',
-    'North Korea': '#ffc107',
-    Iran: '#7c4dff',
+    Russia: '#E00000',
+    China: '#D43A1A',
+    'North Korea': '#C46A2A',
+    Iran: '#8B0A0A',
   };
-  const colour = colours[country] || '#00e5ff';
+  const colour = colours[country] || '#E01515';
 
   return L.divIcon({
     className: 'apt-marker',
@@ -46,7 +46,7 @@ function createAPTIcon(country: string): L.DivIcon {
         "></div>
         <div style="
           position: absolute; top: 8px;
-          font-size: 8px; font-weight: bold; color: #0a0e17;
+          font-size: 8px; font-weight: bold; color: #050608;
           font-family: 'JetBrains Mono', monospace;
         ">⚠</div>
       </div>
@@ -59,22 +59,22 @@ function createAPTIcon(country: string): L.DivIcon {
 
 function createInfraIcon(type: string): L.DivIcon {
   const icons: Record<string, { emoji: string; colour: string }> = {
-    energy: { emoji: '⚡', colour: '#ff9800' },
-    water: { emoji: '💧', colour: '#2196f3' },
-    transport: { emoji: '🚆', colour: '#4caf50' },
-    telecom: { emoji: '📡', colour: '#00bcd4' },
-    healthcare: { emoji: '🏥', colour: '#f44336' },
-    financial: { emoji: '🏦', colour: '#ffc107' },
-    government: { emoji: '🏛', colour: '#9e9e9e' },
+    energy: { emoji: '⚡', colour: '#D43A1A' },
+    water: { emoji: '💧', colour: '#8B0A0A' },
+    transport: { emoji: '🚆', colour: '#8A8F98' },
+    telecom: { emoji: '📡', colour: '#E01515' },
+    healthcare: { emoji: '🏥', colour: '#E00000' },
+    financial: { emoji: '🏦', colour: '#C46A2A' },
+    government: { emoji: '🏛', colour: '#8A8F98' },
   };
-  const { emoji, colour } = icons[type] || { emoji: '●', colour: '#00e5ff' };
+  const { emoji, colour } = icons[type] || { emoji: '●', colour: '#E01515' };
 
   return L.divIcon({
     className: 'infra-marker',
     html: `
       <div style="
         width: 22px; height: 22px;
-        background: #0f1420;
+        background: #0B0D10;
         border: 1.5px solid ${colour};
         border-radius: 3px;
         display: flex; align-items: center; justify-content: center;
@@ -93,37 +93,37 @@ function createInfraIcon(type: string): L.DivIcon {
 function aptPopupHtml(apt: typeof APT_GROUPS[0]): string {
   const sectorTags = apt.targetSectors
     .slice(0, 4)
-    .map((s) => `<span style="background:rgba(0,229,255,0.1);border:1px solid rgba(0,229,255,0.2);padding:1px 5px;border-radius:2px;font-size:9px;color:#00e5ff;">${s}</span>`)
+    .map((s) => `<span style="background:rgba(224,21,21,0.1);border:1px solid rgba(224,21,21,0.2);padding:1px 5px;border-radius:2px;font-size:9px;color:#E01515;">${s}</span>`)
     .join(' ');
 
   return `
     <div style="font-family:'JetBrains Mono',monospace;min-width:220px;max-width:280px;">
-      <div style="font-size:12px;font-weight:600;color:#00e5ff;margin-bottom:4px;">
+      <div style="font-size:12px;font-weight:600;color:#E01515;margin-bottom:4px;">
         ⚠ ${apt.name}
       </div>
-      <div style="font-size:9px;color:#9e9e9e;margin-bottom:6px;">
+      <div style="font-size:9px;color:#8A8F98;margin-bottom:6px;">
         ${apt.aliases.slice(0, 3).join(' · ')}
       </div>
-      <div style="font-size:10px;color:#e0e0e0;margin-bottom:4px;">
-        <span style="color:#9e9e9e;">Sponsor:</span> ${apt.sponsor}
+      <div style="font-size:10px;color:#E8E8E8;margin-bottom:4px;">
+        <span style="color:#8A8F98;">Sponsor:</span> ${apt.sponsor}
       </div>
-      <div style="font-size:10px;color:#e0e0e0;margin-bottom:4px;">
-        <span style="color:#9e9e9e;">Origin:</span> ${apt.country}
+      <div style="font-size:10px;color:#E8E8E8;margin-bottom:4px;">
+        <span style="color:#8A8F98;">Origin:</span> ${apt.country}
       </div>
-      <div style="font-size:10px;color:#e0e0e0;margin-bottom:4px;">
-        <span style="color:#9e9e9e;">Active since:</span> ${apt.activeSince}
+      <div style="font-size:10px;color:#E8E8E8;margin-bottom:4px;">
+        <span style="color:#8A8F98;">Active since:</span> ${apt.activeSince}
       </div>
-      <div style="font-size:10px;color:#e0e0e0;margin-bottom:6px;">
-        <span style="color:#9e9e9e;">MITRE:</span>
-        <span style="color:#7c4dff;">${apt.mitreId}</span>
+      <div style="font-size:10px;color:#E8E8E8;margin-bottom:6px;">
+        <span style="color:#8A8F98;">MITRE:</span>
+        <span style="color:#8B0A0A;">${apt.mitreId}</span>
       </div>
       <div style="margin-bottom:6px;">
-        <span style="font-size:9px;color:#9e9e9e;">Targets:</span><br/>
+        <span style="font-size:9px;color:#8A8F98;">Targets:</span><br/>
         <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;">
           ${sectorTags}
         </div>
       </div>
-      <div style="font-size:9px;color:#9e9e9e;line-height:1.4;border-top:1px solid #1e2a3a;padding-top:6px;">
+      <div style="font-size:9px;color:#8A8F98;line-height:1.4;border-top:1px solid rgba(224,21,21,0.15);padding-top:6px;">
         ${apt.description}
       </div>
     </div>
@@ -132,19 +132,19 @@ function aptPopupHtml(apt: typeof APT_GROUPS[0]): string {
 
 function infraPopupHtml(infra: typeof CRITICAL_INFRASTRUCTURE[0]): string {
   const severityColours: Record<string, string> = {
-    critical: '#ff1744', high: '#ff5722', medium: '#ff9800', low: '#ffc107', info: '#00bcd4',
+    critical: '#E00000', high: '#E01515', medium: '#D43A1A', low: '#C46A2A', info: '#8A8F98',
   };
-  const col = severityColours[infra.riskLevel] || '#00bcd4';
+  const col = severityColours[infra.riskLevel] || '#8A8F98';
 
   return `
     <div style="font-family:'JetBrains Mono',monospace;min-width:180px;">
-      <div style="font-size:11px;font-weight:600;color:#e0e0e0;margin-bottom:4px;">
+      <div style="font-size:11px;font-weight:600;color:#E8E8E8;margin-bottom:4px;">
         ${infra.name}
       </div>
-      <div style="font-size:9px;color:#9e9e9e;margin-bottom:3px;">
+      <div style="font-size:9px;color:#8A8F98;margin-bottom:3px;">
         ${infra.type.toUpperCase()} · ${infra.country}
       </div>
-      ${infra.operator ? `<div style="font-size:9px;color:#9e9e9e;">Operator: ${infra.operator}</div>` : ''}
+      ${infra.operator ? `<div style="font-size:9px;color:#8A8F98;">Operator: ${infra.operator}</div>` : ''}
       <div style="font-size:9px;margin-top:4px;">
         <span style="background:${col}20;color:${col};border:1px solid ${col}40;padding:1px 6px;border-radius:2px;">
           ${infra.riskLevel.toUpperCase()}
@@ -239,8 +239,14 @@ export function ThreatMap() {
     // Optional: add labels as a separate layer on top
     L.tileLayer(
       'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png',
-      { subdomains: 'abcd', maxZoom: 19, opacity: 0.5 }
+      { subdomains: 'abcd', maxZoom: 19, opacity: 0.25 }
     ).addTo(map);
+
+    // Apply red hue filter to map tiles
+    const tilePane = map.getPane('tilePane');
+    if (tilePane) {
+      tilePane.style.filter = 'brightness(0.6) saturate(0.5) sepia(0.4) hue-rotate(-30deg) contrast(1.15)';
+    }
 
     // Zoom control — bottom left
     L.control.zoom({ position: 'bottomleft' }).addTo(map);
@@ -271,6 +277,7 @@ export function ThreatMap() {
     layerGroupsRef.current = groups;
 
     // Populate static layers
+    populateHeatGlows(map);
     populateAPTMarkers(groups['apt-markers']);
     populateAttackArcs(groups['active-campaigns']);
     populateInfrastructure(groups['critical-infra']);
@@ -333,17 +340,73 @@ export function ThreatMap() {
 
       {/* Map Stats Overlay — bottom right */}
       <div className="absolute bottom-3 right-16 z-[1000] flex items-center gap-3">
-        <MapStat label="APT Groups" count={APT_GROUPS.length} colour="#ff1744" />
-        <MapStat label="Infrastructure" count={CRITICAL_INFRASTRUCTURE.length} colour="#ff9800" />
-        <MapStat label="Attack Vectors" count={ATTACK_ARCS.length} colour="#ff6d00" />
+        <MapStat label="APT Groups" count={APT_GROUPS.length} colour="#E00000" />
+        <MapStat label="Infrastructure" count={CRITICAL_INFRASTRUCTURE.length} colour="#D43A1A" />
+        <MapStat label="Attack Vectors" count={ATTACK_ARCS.length} colour="#D43A1A" />
       </div>
 
-      {/* Vignette overlay for depth */}
+      {/* Grid overlay — primary 100px grid + secondary 25px grid */}
       <div
         className="absolute inset-0 pointer-events-none z-[500]"
         style={{
-          background: 'radial-gradient(ellipse at center, transparent 50%, #0a0e17 100%)',
-          opacity: 0.4,
+          backgroundImage: `
+            linear-gradient(rgba(224, 21, 21, 1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(224, 21, 21, 1) 1px, transparent 1px),
+            linear-gradient(rgba(224, 21, 21, 1) 0.5px, transparent 0.5px),
+            linear-gradient(90deg, rgba(224, 21, 21, 1) 0.5px, transparent 0.5px)
+          `,
+          backgroundSize: '100px 100px, 100px 100px, 25px 25px, 25px 25px',
+          opacity: 0.045,
+        }}
+      />
+
+      {/* Red radial vignette */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[500]"
+        style={{
+          background: 'radial-gradient(ellipse at center, transparent 0%, transparent 35%, rgba(224, 21, 21, 0.06) 65%, rgba(139, 10, 10, 0.12) 100%)',
+        }}
+      />
+
+      {/* Film grain / noise texture */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[550]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E")`,
+          opacity: 0.03,
+          mixBlendMode: 'overlay',
+        }}
+      />
+
+      {/* Animated grain flicker */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[551]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' seed='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+          opacity: 0.02,
+          mixBlendMode: 'soft-light',
+          animation: 'grain-flicker 0.15s steps(1) infinite',
+        }}
+      />
+
+      {/* Animated scanline */}
+      <div
+        className="absolute left-0 right-0 pointer-events-none z-[600] animate-scanline"
+        style={{
+          height: '2px',
+          background: 'linear-gradient(to bottom, transparent, #E01515, transparent)',
+          opacity: 0.12,
+          boxShadow: '0 0 20px rgba(224, 21, 21, 0.25), 0 0 40px rgba(224, 21, 21, 0.1)',
+        }}
+      />
+
+      {/* Heavy vignette — corners nearly black */}
+      <div
+        className="absolute inset-0 pointer-events-none z-[700]"
+        style={{
+          background: `
+            radial-gradient(ellipse at center, transparent 25%, rgba(5, 6, 8, 0.3) 55%, rgba(5, 6, 8, 0.7) 80%, rgba(5, 6, 8, 0.95) 100%)
+          `,
         }}
       />
     </div>
@@ -387,12 +450,12 @@ function populateAPTMarkers(group: L.LayerGroup) {
 function populateAttackArcs(group: L.LayerGroup) {
   for (const arc of ATTACK_ARCS) {
     const severityColours: Record<string, string> = {
-      critical: '#ff1744',
-      high: '#ff5722',
-      medium: '#ff9800',
-      low: '#ffc107',
+      critical: '#E00000',
+      high: '#E01515',
+      medium: '#D43A1A',
+      low: '#C46A2A',
     };
-    const colour = severityColours[arc.severity] || '#ff6d00';
+    const colour = severityColours[arc.severity] || '#E01515';
 
     const points = getArcPoints(
       [arc.fromLat, arc.fromLng],
@@ -431,8 +494,8 @@ function populateAttackArcs(group: L.LayerGroup) {
 
     arrow.bindPopup(`
       <div style="font-family:'JetBrains Mono',monospace;font-size:10px;">
-        <div style="color:#00e5ff;font-weight:600;margin-bottom:3px;">${arc.label}</div>
-        ${arc.aptGroup ? `<div style="color:#9e9e9e;font-size:9px;">APT: ${arc.aptGroup}</div>` : ''}
+        <div style="color:#E01515;font-weight:600;margin-bottom:3px;">${arc.label}</div>
+        ${arc.aptGroup ? `<div style="color:#8A8F98;font-size:9px;">APT: ${arc.aptGroup}</div>` : ''}
         <div style="color:${colour};font-size:9px;margin-top:2px;">${arc.severity.toUpperCase()}</div>
       </div>
     `, { className: 'cyber-popup' });
@@ -471,6 +534,52 @@ function populateInfrastructure(group: L.LayerGroup) {
   }
 }
 
+function populateHeatGlows(map: L.Map) {
+  const hotspots = [
+    { lat: 33.0, lng: 44.0, radius: 800000, intensity: 0.12 },
+    { lat: 28.0, lng: 48.0, radius: 600000, intensity: 0.10 },
+    { lat: 49.0, lng: 32.0, radius: 700000, intensity: 0.11 },
+    { lat: 50.0, lng: 10.0, radius: 900000, intensity: 0.08 },
+    { lat: 35.0, lng: 120.0, radius: 800000, intensity: 0.10 },
+    { lat: 37.0, lng: 127.0, radius: 500000, intensity: 0.09 },
+    { lat: 56.0, lng: 38.0, radius: 700000, intensity: 0.09 },
+    { lat: 33.0, lng: 53.0, radius: 600000, intensity: 0.10 },
+    { lat: 5.0,  lng: 40.0, radius: 600000, intensity: 0.07 },
+    { lat: 38.0, lng: -77.0, radius: 800000, intensity: 0.08 },
+    { lat: 22.0, lng: 78.0, radius: 700000, intensity: 0.06 },
+    { lat: 5.0,  lng: 105.0, radius: 600000, intensity: 0.07 },
+  ];
+
+  for (const spot of hotspots) {
+    L.circle([spot.lat, spot.lng], {
+      radius: spot.radius,
+      color: 'transparent',
+      fillColor: '#E01515',
+      fillOpacity: spot.intensity * 0.3,
+      interactive: false,
+      pane: 'overlayPane',
+    }).addTo(map);
+
+    L.circle([spot.lat, spot.lng], {
+      radius: spot.radius * 0.6,
+      color: 'transparent',
+      fillColor: '#E01515',
+      fillOpacity: spot.intensity * 0.5,
+      interactive: false,
+      pane: 'overlayPane',
+    }).addTo(map);
+
+    L.circle([spot.lat, spot.lng], {
+      radius: spot.radius * 0.25,
+      color: 'transparent',
+      fillColor: '#FF2020',
+      fillOpacity: spot.intensity * 0.7,
+      interactive: false,
+      pane: 'overlayPane',
+    }).addTo(map);
+  }
+}
+
 function populateCables(group: L.LayerGroup) {
   for (const cable of UNDERSEA_CABLES) {
     if (cable.landingPoints.length < 2) continue;
@@ -478,19 +587,19 @@ function populateCables(group: L.LayerGroup) {
     const points: [number, number][] = cable.landingPoints.map((p) => [p.lat, p.lng]);
 
     const line = L.polyline(points, {
-      color: '#00bcd4',
+      color: 'rgba(224, 21, 21, 0.5)',
       weight: 1,
-      opacity: 0.25,
+      opacity: 0.4,
       dashArray: '4 6',
     });
 
     line.bindPopup(`
       <div style="font-family:'JetBrains Mono',monospace;font-size:10px;">
-        <div style="color:#00bcd4;font-weight:600;margin-bottom:3px;">🌐 ${cable.name}</div>
-        <div style="color:#9e9e9e;font-size:9px;">
+        <div style="color:#E01515;font-weight:600;margin-bottom:3px;">🌐 ${cable.name}</div>
+        <div style="color:#8A8F98;font-size:9px;">
           ${cable.landingPoints.map((p) => p.country).join(' → ')}
         </div>
-        ${cable.capacityTbps ? `<div style="color:#9e9e9e;font-size:9px;margin-top:2px;">Capacity: ${cable.capacityTbps} Tbps</div>` : ''}
+        ${cable.capacityTbps ? `<div style="color:#8A8F98;font-size:9px;margin-top:2px;">Capacity: ${cable.capacityTbps} Tbps</div>` : ''}
       </div>
     `, { className: 'cyber-popup' });
 

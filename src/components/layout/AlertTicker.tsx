@@ -24,7 +24,7 @@ export function AlertTicker() {
   const [paused, setPaused] = useState(false);
 
   return (
-    <div className="h-7 bg-cyber-panel border-t border-threat-critical/20 flex items-center overflow-hidden flex-shrink-0 relative">
+    <div className="h-7 border-t border-[rgba(224,21,21,0.15)] flex items-center overflow-hidden flex-shrink-0 relative" style={{ background: 'rgba(5, 6, 8, 0.45)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
       {/* Label */}
       <div className="flex-shrink-0 flex items-center gap-1.5 px-3 border-r border-cyber-border bg-threat-critical/5 h-full z-10">
         <span className="w-1.5 h-1.5 rounded-full bg-threat-critical animate-threat-pulse" />

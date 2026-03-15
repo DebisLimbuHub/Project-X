@@ -133,7 +133,7 @@ export function useDataOrchestrator() {
 
     // Stagger initial fetches to avoid thundering herd
     setTimeout(() => refreshFeeds(), 500);
-    setTimeout(() => refreshCVEs(), 2000);
+    setTimeout(() => refreshCVEs(), 1000);
 
     // Set up refresh intervals
     rssTimerRef.current = setInterval(refreshFeeds, RSS_INTERVAL);
