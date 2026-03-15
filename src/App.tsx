@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useCyberStore } from './store';
 import { Header } from './components/layout/Header';
 import { AlertTicker } from './components/layout/AlertTicker';
+import { CybersecurityNews } from './components/panels/CybersecurityNews';
 import { ThreatMap } from './components/map/ThreatMap';
 import { ThreatFeedPanel } from './components/panels/ThreatFeedPanel';
 import { ActiveThreatsPanel } from './components/panels/ActiveThreatsPanel';
@@ -13,6 +14,7 @@ import { InfraRiskPanel } from './components/panels/InfraRiskPanel';
 import { SignalPanel } from './components/panels/SignalPanel';
 import { RansomwareTrackerPanel } from './components/panels/RansomwareTrackerPanel';
 import { CyberStocksPanel } from './components/panels/CyberStocksPanel';
+import { LiveChannelsPanel } from './components/panels/LiveChannelsPanel';
 import { SearchModal } from './components/shared/SearchModal';
 import { useDataOrchestrator } from './hooks/useDataOrchestrator';
 
@@ -21,8 +23,11 @@ import { useDataOrchestrator } from './hooks/useDataOrchestrator';
  * Phase 5: Polish — constrained panel sizes, ticker fix, all panels visible.
  */
 
+type AppView = 'dashboard' | 'news';
+
 export default function App() {
-  const { setSearchOpen } = useCyberStore();
+  const setSearchOpen = useCyberStore((state) => state.setSearchOpen);
+  const [view, setView] = useState<AppView>('dashboard');
 
   // Start data fetching, clustering, and correlation
   useDataOrchestrator();
@@ -47,74 +52,110 @@ export default function App() {
       {/* Header Bar */}
       <Header />
 
-      {/* Main Dashboard Area */}
-      <main className="flex-1 flex overflow-hidden">
+      {/* View toggle nav */}
+      <div className="flex-shrink-0 flex items-center gap-1 px-3 py-1 bg-cyber-panel border-b border-cyber-border">
+        <button
+          onClick={() => setView('dashboard')}
+          className={`px-3 py-1 text-[9px] font-mono uppercase tracking-wider rounded-sm transition-colors ${
+            view === 'dashboard'
+              ? 'bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/30'
+              : 'text-gray-500 hover:text-gray-300 border border-transparent'
+          }`}
+        >
+          🗺 Dashboard
+        </button>
+        <button
+          onClick={() => setView('news')}
+          className={`px-3 py-1 text-[9px] font-mono uppercase tracking-wider rounded-sm transition-colors ${
+            view === 'news'
+              ? 'bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/30'
+              : 'text-gray-500 hover:text-gray-300 border border-transparent'
+          }`}
+        >
+          📡 Cyber Intel
+        </button>
+      </div>
 
-        {/* ===== LEFT SIDEBAR ===== */}
-        <aside className="w-72 flex-shrink-0 flex flex-col gap-1 p-1 overflow-y-auto">
-          {/* Threat feed gets the most space but is capped */}
-          <div className="min-h-[200px] max-h-[35vh] flex flex-col">
-            <ThreatFeedPanel />
-          </div>
-          {/* Active threats — always visible */}
-          <div className="min-h-[160px] max-h-[25vh] flex flex-col">
-            <ActiveThreatsPanel />
-          </div>
-          {/* Attack origins — always visible */}
-          <div className="min-h-[150px] max-h-[22vh] flex flex-col">
-            <AttackOriginsPanel />
-          </div>
-          {/* Top targets */}
-          <div className="min-h-[140px] max-h-[22vh] flex flex-col">
-            <TopTargetsPanel />
-          </div>
-        </aside>
+      {view === 'dashboard' ? (
+        <>
+          {/* Main Dashboard Area */}
+          <main className="flex-1 flex overflow-hidden">
 
-        {/* ===== CENTRE MAP ===== */}
-        <section className="flex-1 relative">
-          <ThreatMap />
+            {/* ===== LEFT SIDEBAR ===== */}
+            <aside className="w-72 flex-shrink-0 flex flex-col gap-1 p-1 overflow-y-auto">
+              {/* Threat feed gets the most space but is capped */}
+              <div className="min-h-[200px] max-h-[35vh] flex flex-col">
+                <ThreatFeedPanel />
+              </div>
+              {/* Active threats — always visible */}
+              <div className="min-h-[160px] max-h-[25vh] flex flex-col">
+                <ActiveThreatsPanel />
+              </div>
+              {/* Attack origins — always visible */}
+              <div className="min-h-[150px] max-h-[22vh] flex flex-col">
+                <AttackOriginsPanel />
+              </div>
+              {/* Top targets */}
+              <div className="min-h-[140px] max-h-[22vh] flex flex-col">
+                <TopTargetsPanel />
+              </div>
+            </aside>
 
-          <div className="absolute top-2 right-2 z-[1000]">
-            <LayerToggles />
-          </div>
+            {/* ===== CENTRE MAP ===== */}
+            <section className="flex-1 relative">
+              <ThreatMap />
 
-          <div className="absolute top-2 left-2 z-[1000]">
-            <TimeFilter />
-          </div>
-        </section>
+              <div className="absolute top-2 right-2 z-[1000]">
+                <LayerToggles />
+              </div>
 
-        {/* ===== RIGHT SIDEBAR ===== */}
-        <aside className="w-72 flex-shrink-0 flex flex-col gap-1 p-1 overflow-y-auto">
-          {/* Threat gauge — needs full height for the SVG arc */}
-          <div className="min-h-[290px] max-h-[38vh] flex flex-col">
-            <ThreatLevelPanel />
-          </div>
-          {/* Infra risk */}
-          <div className="min-h-[160px] max-h-[25vh] flex flex-col">
-            <InfraRiskPanel />
-          </div>
-          {/* CVE feed */}
-          <div className="min-h-[200px] max-h-[30vh] flex flex-col">
-            <CVEFeedPanel />
-          </div>
-          {/* Signals */}
-          <div className="min-h-[120px] max-h-[22vh] flex flex-col">
-            <SignalPanel />
-          </div>
-          {/* Ransomware tracker */}
-          <div className="min-h-[130px] max-h-[22vh] flex flex-col">
-            <RansomwareTrackerPanel />
-          </div>
-          {/* Cyber stocks */}
-          <div className="min-h-[180px] max-h-[30vh] flex flex-col">
-            <CyberStocksPanel />
-          </div>
-        </aside>
+              <div className="absolute top-2 left-2 z-[1000]">
+                <TimeFilter />
+              </div>
+            </section>
 
-      </main>
+            {/* ===== RIGHT SIDEBAR ===== */}
+            <aside className="w-72 flex-shrink-0 flex flex-col gap-1 p-1 overflow-y-auto">
+              {/* Threat gauge — needs full height for the SVG arc */}
+              <div className="min-h-[290px] max-h-[38vh] flex flex-col">
+                <ThreatLevelPanel />
+              </div>
+              {/* Infra risk */}
+              <div className="min-h-[160px] max-h-[25vh] flex flex-col">
+                <InfraRiskPanel />
+              </div>
+              {/* CVE feed */}
+              <div className="min-h-[200px] max-h-[30vh] flex flex-col">
+                <CVEFeedPanel />
+              </div>
+              {/* Signals */}
+              <div className="min-h-[120px] max-h-[22vh] flex flex-col">
+                <SignalPanel />
+              </div>
+              {/* Ransomware tracker */}
+              <div className="min-h-[130px] max-h-[22vh] flex flex-col">
+                <RansomwareTrackerPanel />
+              </div>
+              {/* Cyber stocks */}
+              <div className="min-h-[180px] max-h-[30vh] flex flex-col">
+                <CyberStocksPanel />
+              </div>
+              {/* Live channels */}
+              <div className="min-h-[360px] max-h-[45vh] flex flex-col">
+                <LiveChannelsPanel />
+              </div>
+            </aside>
 
-      {/* Bottom Alert Ticker */}
-      <AlertTicker />
+          </main>
+
+          {/* Bottom Alert Ticker */}
+          <AlertTicker />
+        </>
+      ) : (
+        <div className="flex-1 overflow-auto">
+          <CybersecurityNews />
+        </div>
+      )}
     </div>
   );
 }
@@ -122,7 +163,8 @@ export default function App() {
 // ===== MAP OVERLAY COMPONENTS =====
 
 function LayerToggles() {
-  const { layers, toggleLayer } = useCyberStore();
+  const layers = useCyberStore((state) => state.layers);
+  const toggleLayer = useCyberStore((state) => state.toggleLayer);
   const groups = ['threats', 'infrastructure', 'network', 'intelligence'] as const;
 
   return (
@@ -161,7 +203,8 @@ function LayerToggles() {
 }
 
 function TimeFilter() {
-  const { timeFilter, setTimeFilter } = useCyberStore();
+  const timeFilter = useCyberStore((state) => state.timeFilter);
+  const setTimeFilter = useCyberStore((state) => state.setTimeFilter);
   const filters = ['1h', '6h', '24h', '48h', '7d'] as const;
 
   return (

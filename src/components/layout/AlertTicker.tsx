@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useCyberStore } from '@/store';
 
 /**
  * Alert Ticker — Scrolling alert bar at the bottom of the dashboard.
- * Phase 5: Slow readable speed (180s), tight gaps, hover-to-pause.
+ * Phase 5: Faster marquee, tight gaps, hover-to-pause.
  */
 
 const DEMO_ALERTS = [
@@ -18,8 +18,9 @@ const DEMO_ALERTS = [
 ];
 
 export function AlertTicker() {
-  const { alerts } = useCyberStore();
+  const alerts = useCyberStore((state) => state.alerts);
   const displayAlerts = alerts.length > 0 ? alerts : DEMO_ALERTS;
+  const loopAlerts = useMemo(() => [...displayAlerts, ...displayAlerts], [displayAlerts]);
   const [paused, setPaused] = useState(false);
 
   return (
@@ -47,7 +48,7 @@ export function AlertTicker() {
           style={{ animationPlayState: paused ? 'paused' : 'running' }}
         >
           {/* Duplicate alerts for seamless loop */}
-          {[...displayAlerts, ...displayAlerts].map((alert, i) => (
+          {loopAlerts.map((alert, i) => (
             <span
               key={`${alert.id}-${i}`}
               className="inline-flex items-center gap-1.5"

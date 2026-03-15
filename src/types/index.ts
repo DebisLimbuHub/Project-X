@@ -243,6 +243,35 @@ export interface CyberStock {
   sector: string;
 }
 
+export type LiveChannelProvider =
+  | 'youtube-video'
+  | 'youtube-playlist'
+  | 'youtube-user-uploads'
+  | 'direct-iframe'
+  | 'hls';
+
+export interface LiveChannelSource {
+  provider: LiveChannelProvider;
+  videoId?: string;
+  playlistId?: string;
+  uploadsUser?: string;
+  embedUrl?: string;
+  streamUrl?: string;
+  websiteUrl?: string;
+  priority: number;
+  label?: string;
+}
+
+export interface LiveChannel {
+  id: string;
+  name: string;
+  region: string;
+  category: 'general' | 'finance' | 'geopolitics' | 'business';
+  description?: string;
+  sources: LiveChannelSource[];
+  tags?: string[];
+}
+
 // ===== VELOCITY & ANALYSIS =====
 
 export interface VelocityData {

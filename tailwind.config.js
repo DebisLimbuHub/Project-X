@@ -36,7 +36,7 @@ export default {
       animation: {
         'threat-pulse': 'threat-pulse 2s ease-in-out infinite',
         'arc-flow': 'arc-flow 2s linear infinite',
-        'ticker-scroll': 'ticker-scroll 180s linear infinite',
+        'ticker-scroll': 'ticker-scroll 75s linear infinite',
         'glow': 'glow 2s ease-in-out infinite alternate',
         'fade-in': 'fade-in 0.3s ease-out',
       },

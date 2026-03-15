@@ -122,7 +122,50 @@ app.get('/api/nvd', async (req, res) => {
   }
 });
 
-// ===== STOCK QUOTES (Yahoo Finance) =====
+// ===== STOCK QUOTES (Yahoo Finance v8 chart API → Simulated) =====
+
+const BASE_PRICES = {
+  CRWD: 345.00, PANW: 188.50, FTNT: 98.20, ZS: 215.00,
+  S: 24.80, CYBR: 315.00, NET: 118.00, OKTA: 102.00,
+  QLYS: 142.00, TENB: 41.50, RPD: 37.80, VRNS: 46.20,
+};
+
+const YAHOO_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+};
+
+async function fetchFromYahooV8(symbolList) {
+  const settled = await Promise.allSettled(
+    symbolList.map(async symbol => {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
+      const response = await fetch(url, {
+        headers: YAHOO_HEADERS,
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!response.ok) throw new Error(`Yahoo v8 returned ${response.status} for ${symbol}`);
+      const data = await response.json();
+      const meta = data?.chart?.result?.[0]?.meta;
+      if (!meta?.regularMarketPrice) throw new Error(`No price data for ${symbol}`);
+      const price = meta.regularMarketPrice;
+      const previousClose = meta.previousClose || meta.chartPreviousClose || price;
+      const change = parseFloat((price - previousClose).toFixed(2));
+      const changePercent = parseFloat(((change / previousClose) * 100).toFixed(2));
+      return { symbol, price, change, changePercent };
+    })
+  );
+  const quotes = settled.filter(r => r.status === 'fulfilled').map(r => r.value);
+  if (quotes.length === 0) throw new Error('Yahoo v8 returned no results');
+  return quotes;
+}
+
+function buildSimulated(symbolList) {
+  return symbolList.map(symbol => {
+    const base = BASE_PRICES[symbol] || 100;
+    const change = parseFloat(((Math.random() - 0.48) * base * 0.04).toFixed(2));
+    const changePercent = parseFloat(((change / base) * 100).toFixed(2));
+    return { symbol, price: parseFloat((base + change).toFixed(2)), change, changePercent };
+  });
+}
 
 app.get('/api/stocks', async (req, res) => {
   const symbols = req.query.symbols;
@@ -130,43 +173,24 @@ app.get('/api/stocks', async (req, res) => {
     return res.status(400).json({ error: 'Missing ?symbols= parameter' });
   }
 
-  // Validate symbols
   const symbolList = symbols.split(',').map(s => s.trim().toUpperCase()).filter(s => /^[A-Z0-9.^=-]{1,10}$/.test(s)).slice(0, 20);
   if (symbolList.length === 0) {
     return res.status(400).json({ error: 'No valid symbols provided' });
   }
 
+  // 1. Try Yahoo Finance v8 chart API
   try {
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolList.join(',')}`;
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-      signal: AbortSignal.timeout(10_000),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Yahoo Finance returned ${response.status}`);
-    }
-
-    const data = await response.json();
-    const results = data?.quoteResponse?.result || [];
-
-    const quotes = results.map(q => ({
-      symbol: q.symbol,
-      price: q.regularMarketPrice || 0,
-      change: q.regularMarketChange || 0,
-      changePercent: q.regularMarketChangePercent || 0,
-      marketCap: q.marketCap || 0,
-      volume: q.regularMarketVolume || 0,
-    }));
-
-    res.json({ ok: true, quotes });
+    const quotes = await fetchFromYahooV8(symbolList);
+    console.log(`[Stocks] Yahoo v8 OK (${quotes.length}/${symbolList.length} symbols)`);
+    return res.json({ ok: true, quotes, simulated: false });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error(`[Stocks] Failed: ${message}`);
-    res.status(502).json({ error: message, quotes: [] });
+    console.warn(`[Stocks] Yahoo v8 failed: ${err.message} — using simulated data`);
   }
+
+  // 2. Simulated fallback
+  const quotes = buildSimulated(symbolList);
+  console.log('[Stocks] Returning simulated data');
+  return res.json({ ok: true, quotes, simulated: true });
 });
 
 // ===== HEALTH CHECK =====

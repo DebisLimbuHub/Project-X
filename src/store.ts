@@ -15,7 +15,9 @@ import type {
   BotnetC2,
   CyberStock,
   CircuitBreakerState,
+  LiveChannel,
 } from '@/types';
+import { getBestInitialSource, getSortedSources } from '@/utils/liveChannelEmbed';
 
 interface CyberMonitorState {
   // === THREAT LEVEL ===
@@ -62,6 +64,16 @@ interface CyberMonitorState {
   // === MARKETS ===
   cyberStocks: CyberStock[];
   setCyberStocks: (stocks: CyberStock[]) => void;
+
+  // === LIVE CHANNELS ===
+  liveChannels: LiveChannel[];
+  selectedChannelId: string | null;
+  selectedChannelSourceIndex: number;
+  channelSearch: string;
+  setLiveChannels: (channels: LiveChannel[]) => void;
+  selectChannel: (channelId: string) => void;
+  selectNextChannelSource: () => void;
+  setChannelSearch: (value: string) => void;
 
   // === MAP LAYERS ===
   layers: MapLayer[];
@@ -143,6 +155,63 @@ export const useCyberStore = create<CyberMonitorState>((set) => ({
   // Markets
   cyberStocks: [],
   setCyberStocks: (stocks) => set({ cyberStocks: stocks }),
+
+  // Live Channels
+  liveChannels: [],
+  selectedChannelId: null,
+  selectedChannelSourceIndex: 0,
+  channelSearch: '',
+  setLiveChannels: (channels) =>
+    set((state) => {
+      const nextChannels = channels.map((channel) => ({
+        ...channel,
+        sources: getSortedSources(channel),
+      }));
+
+      const selected =
+        nextChannels.find((channel) => channel.id === state.selectedChannelId) ?? nextChannels[0];
+
+      const bestSource = selected ? getBestInitialSource(selected) : null;
+      const nextSourceIndex = selected
+        ? state.selectedChannelId === selected.id
+          ? Math.min(state.selectedChannelSourceIndex, Math.max(selected.sources.length - 1, 0))
+          : bestSource
+            ? selected.sources.findIndex((source) => source === bestSource)
+            : 0
+        : 0;
+
+      return {
+        liveChannels: nextChannels,
+        selectedChannelId: selected?.id ?? null,
+        selectedChannelSourceIndex: nextSourceIndex,
+      };
+    }),
+  selectChannel: (channelId) =>
+    set((state) => ({
+      selectedChannelId:
+        state.liveChannels.find((channel) => channel.id === channelId)?.id ?? state.selectedChannelId,
+      selectedChannelSourceIndex: (() => {
+        const channel = state.liveChannels.find((item) => item.id === channelId);
+        if (!channel) return state.selectedChannelSourceIndex;
+        const bestSource = getBestInitialSource(channel);
+        return bestSource ? channel.sources.findIndex((source) => source === bestSource) : 0;
+      })(),
+    })),
+  selectNextChannelSource: () =>
+    set((state) => {
+      const channel = state.liveChannels.find((item) => item.id === state.selectedChannelId);
+      if (!channel) return {};
+
+      const nextIndex = Math.min(
+        state.selectedChannelSourceIndex + 1,
+        Math.max(channel.sources.length - 1, 0),
+      );
+
+      return {
+        selectedChannelSourceIndex: nextIndex,
+      };
+    }),
+  setChannelSearch: (value) => set({ channelSearch: value }),
 
   // Map Layers
   layers: [

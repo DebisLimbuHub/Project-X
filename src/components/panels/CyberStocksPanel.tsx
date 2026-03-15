@@ -38,6 +38,7 @@ export function CyberStocksPanel() {
   );
   const [lastUpdate, setLastUpdate] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [simulated, setSimulated] = useState(false);
 
   const fetchQuotes = useCallback(async () => {
     try {
@@ -67,6 +68,7 @@ export function CyberStocksPanel() {
           })
         );
         setLastUpdate(new Date().toLocaleTimeString());
+        setSimulated(!!data.simulated);
         setError(null);
       }
     } catch (err) {
@@ -98,7 +100,18 @@ export function CyberStocksPanel() {
             </>
           )}
           {lastUpdate && (
-            <span className="text-[8px] font-mono text-gray-600">{lastUpdate}</span>
+            <>
+              {simulated ? (
+                <span className="text-[7px] font-mono font-bold text-yellow-500 border border-yellow-700 px-1 rounded-sm">
+                  SIMULATED
+                </span>
+              ) : (
+                <span className="text-[7px] font-mono font-bold text-threat-safe border border-green-800 px-1 rounded-sm">
+                  LIVE
+                </span>
+              )}
+              <span className="text-[8px] font-mono text-gray-600">{lastUpdate}</span>
+            </>
           )}
         </div>
       </div>

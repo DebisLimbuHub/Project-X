@@ -25,16 +25,14 @@ const RSS_INTERVAL = 5 * 60 * 1000;   // 5 minutes
 const CVE_INTERVAL = 10 * 60 * 1000;  // 10 minutes
 
 export function useDataOrchestrator() {
-  const {
-    setClusters,
-    setCVEs,
-    setSignals,
-    setThreatLevel,
-    setAlerts,
-    threatLevel,
-    clusters,
-    cves,
-  } = useCyberStore();
+  const setClusters = useCyberStore((state) => state.setClusters);
+  const setCVEs = useCyberStore((state) => state.setCVEs);
+  const setSignals = useCyberStore((state) => state.setSignals);
+  const setThreatLevel = useCyberStore((state) => state.setThreatLevel);
+  const setAlerts = useCyberStore((state) => state.setAlerts);
+  const threatLevel = useCyberStore((state) => state.threatLevel);
+  const clusters = useCyberStore((state) => state.clusters);
+  const cves = useCyberStore((state) => state.cves);
 
   const rssTimerRef = useRef<ReturnType<typeof setInterval>>();
   const cveTimerRef = useRef<ReturnType<typeof setInterval>>();

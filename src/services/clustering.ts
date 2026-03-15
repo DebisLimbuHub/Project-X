@@ -191,16 +191,22 @@ export function clusterFeedItems(items: ThreatFeedItem[]): ThreatCluster[] {
     });
   }
 
-  // Sort clusters: by severity, then by source count, then by recency
+  // Sort clusters: newest first; within a 2-hour window, sort by severity then source count
   clusters.sort((a, b) => {
-    const sevOrder: Record<ThreatSeverity, number> = {
-      critical: 0, high: 1, medium: 2, low: 3, info: 4,
-    };
-    if (sevOrder[a.severity] !== sevOrder[b.severity]) {
-      return sevOrder[a.severity] - sevOrder[b.severity];
+    const timeA = new Date(a.primary.publishedAt).getTime();
+    const timeB = new Date(b.primary.publishedAt).getTime();
+    const timeDiff = timeB - timeA;
+
+    if (Math.abs(timeDiff) < 2 * 60 * 60 * 1000) {
+      const sevOrder: Record<ThreatSeverity, number> = {
+        critical: 0, high: 1, medium: 2, low: 3, info: 4,
+      };
+      const sevDiff = sevOrder[a.severity] - sevOrder[b.severity];
+      if (sevDiff !== 0) return sevDiff;
+      if (a.sourceCount !== b.sourceCount) return b.sourceCount - a.sourceCount;
     }
-    if (a.sourceCount !== b.sourceCount) return b.sourceCount - a.sourceCount;
-    return new Date(b.primary.publishedAt).getTime() - new Date(a.primary.publishedAt).getTime();
+
+    return timeDiff;
   });
 
   return clusters;
