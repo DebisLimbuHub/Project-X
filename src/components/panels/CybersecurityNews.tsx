@@ -327,7 +327,7 @@ const CYBER_PODCASTS: CyberPodcast[] = [
     featured: true,
     spotifyUrl: 'https://open.spotify.com/show/0CnYnxrAcfRjh0YSQINAwe',
     spotifyEmbedUrl: 'https://open.spotify.com/embed/show/0CnYnxrAcfRjh0YSQINAwe?utm_source=generator&theme=0',
-    rssUrl: 'https://feeds.megaphone.fm/the-cyberwire-daily',
+    rssUrl: undefined, // iTunes lookup finds correct feed dynamically
     artworkUrl: '/podcast-artwork/cyberwire-daily.jpg',
   },
   {
@@ -340,7 +340,7 @@ const CYBER_PODCASTS: CyberPodcast[] = [
     featured: true,
     spotifyUrl: 'https://open.spotify.com/show/0BdExoUZqbGsBYjt6QZtEJ',
     spotifyEmbedUrl: 'https://open.spotify.com/embed/show/0BdExoUZqbGsBYjt6QZtEJ?utm_source=generator&theme=0',
-    rssUrl: 'https://risky.biz/feeds/risky-business/',
+    rssUrl: 'https://www.risky.biz/feeds/risky-business/',
     artworkUrl: '/podcast-artwork/risky-business.png',
   },
   {
@@ -353,7 +353,7 @@ const CYBER_PODCASTS: CyberPodcast[] = [
     featured: false,
     spotifyUrl: 'https://open.spotify.com/show/3J7pBxEu43nCnRTSXaan8S',
     spotifyEmbedUrl: 'https://open.spotify.com/embed/show/3J7pBxEu43nCnRTSXaan8S?utm_source=generator&theme=0',
-    rssUrl: 'https://feeds.acast.com/public/shows/smashing-security',
+    rssUrl: 'https://www.smashingsecurity.com/rss',
     artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/c5/d7/a8/c5d7a894-f886-7dee-8814-18204dabad46/mza_16440597878419294581.jpeg/600x600bb.jpg',
   },
   {
@@ -406,7 +406,7 @@ const CYBER_PODCASTS: CyberPodcast[] = [
     featured: false,
     spotifyUrl: 'https://open.spotify.com/show/3Gmcfl6jlHexjQSLiMp72i',
     spotifyEmbedUrl: 'https://open.spotify.com/embed/show/3Gmcfl6jlHexjQSLiMp72i?utm_source=generator&theme=0',
-    rssUrl: 'https://feeds.megaphone.fm/clickhere',
+    rssUrl: undefined, // iTunes lookup finds correct feed dynamically
     artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Podcasts221/v4/3f/21/52/3f215200-d8a0-f84a-0e8f-38bba90009c7/mza_8313566408285968211.png/600x600bb.jpg',
   },
   {
@@ -1121,6 +1121,9 @@ const FILTER_TABS: { id: PodcastCategory; label: string }[] = [
 function PodcastsPage() {
   const [activeCategory, setActiveCategory] = useState<PodcastCategory>('all');
   const [selectedPodcast, setSelectedPodcast] = useState<string | null>(null);
+  const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
+  const [episodesLoading, setEpisodesLoading] = useState(false);
+  const [episodesError, setEpisodesError] = useState<string | null>(null);
 
   const featured = CYBER_PODCASTS.filter((p) => p.featured);
   const allFiltered = CYBER_PODCASTS.filter(
@@ -1130,8 +1133,46 @@ function PodcastsPage() {
     ? CYBER_PODCASTS.find((p) => p.id === selectedPodcast) ?? null
     : null;
 
+  const fetchEpisodes = async (podcast: CyberPodcast) => {
+    setEpisodesLoading(true);
+    setEpisodesError(null);
+    setEpisodes([]);
+    try {
+      const params = new URLSearchParams({ name: podcast.title });
+      if (podcast.rssUrl) params.set('rssUrl', podcast.rssUrl);
+      const res = await fetch(`/api/podcast-episodes?${params}`);
+      const data = await res.json();
+      if (data.ok && Array.isArray(data.episodes) && data.episodes.length > 0) {
+        setEpisodes(data.episodes.map((item: { title: string; link: string; description: string; pubDate: string; duration: string }, i: number) => ({
+          id: item.link || `ep-${i}`,
+          title: item.title || 'Untitled',
+          description: item.description || '',
+          publishedAt: item.pubDate || '',
+          durationMs: 0,
+          durationLabel: item.duration || '',
+          thumbnailUrl: '',
+          externalUrl: item.link || podcast.spotifyUrl || '',
+        })));
+      } else {
+        setEpisodesError('Episodes unavailable');
+      }
+    } catch {
+      setEpisodesError('Failed to load episodes');
+    } finally {
+      setEpisodesLoading(false);
+    }
+  };
+
   const handlePlay = (id: string) => {
-    setSelectedPodcast((prev) => (prev === id ? null : id));
+    if (selectedPodcast === id) {
+      setSelectedPodcast(null);
+      setEpisodes([]);
+      setEpisodesError(null);
+      return;
+    }
+    setSelectedPodcast(id);
+    const podcast = CYBER_PODCASTS.find((p) => p.id === id);
+    if (podcast) fetchEpisodes(podcast);
   };
 
   if (CYBER_PODCASTS.length === 0) {
@@ -1173,11 +1214,11 @@ function PodcastsPage() {
               key={selectedPodcast}
               src={selectedPodcastData.spotifyEmbedUrl}
               width="100%"
-              height="500"
+              height="152"
               frameBorder="0"
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
               loading="lazy"
-              style={{ borderRadius: 12, border: 'none', display: 'block' }}
+              style={{ borderRadius: 8, border: 'none', display: 'block' }}
               title={`${selectedPodcastData.title} on Spotify`}
             />
           ) : (
@@ -1192,6 +1233,79 @@ function PodcastsPage() {
               )}
             </div>
           )}
+
+          {/* ── Episode list ── */}
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#E01515' }}>
+                Latest Episodes
+              </span>
+              <div style={{ flex: 1, height: 1, background: 'rgba(224,21,21,0.12)' }} />
+              {episodes.length > 0 && (
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: '#4B5563' }}>
+                  {episodes.length} episodes
+                </span>
+              )}
+            </div>
+
+            {episodesLoading && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '16px 0' }}>
+                <div style={{ width: 14, height: 14, border: '2px solid rgba(224,21,21,0.15)', borderTop: '2px solid #E01515', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#6B7280' }}>Loading episodes...</span>
+              </div>
+            )}
+
+            {episodesError && !episodesLoading && (
+              <div style={{ padding: '12px 0', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#6B7280' }}>{episodesError}</span>
+                {selectedPodcastData.spotifyUrl && (
+                  <a href={selectedPodcastData.spotifyUrl} target="_blank" rel="noopener noreferrer"
+                    style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#1DB954', textDecoration: 'none' }}>
+                    Open in Spotify →
+                  </a>
+                )}
+              </div>
+            )}
+
+            {!episodesLoading && episodes.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {episodes.map((ep, index) => (
+                  <a key={ep.id} href={ep.externalUrl} target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 10px', borderRadius: 5, border: '1px solid rgba(224,21,21,0.08)', background: 'rgba(224,21,21,0.02)', textDecoration: 'none', transition: 'background 0.1s, border-color 0.1s' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(224,21,21,0.07)'; e.currentTarget.style.borderColor = 'rgba(224,21,21,0.2)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(224,21,21,0.02)'; e.currentTarget.style.borderColor = 'rgba(224,21,21,0.08)'; }}
+                  >
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, fontWeight: 600, color: 'rgba(224,21,21,0.3)', minWidth: 18, paddingTop: 2, flexShrink: 0 }}>
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 500, color: '#E8E8E8', lineHeight: 1.3, marginBottom: 2 }}>
+                        {ep.title}
+                      </div>
+                      {ep.description && (
+                        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#8A8F98', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {ep.description}
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', gap: 8, marginTop: 3 }}>
+                        {ep.publishedAt && (
+                          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: '#6B7280' }}>
+                            {new Date(ep.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </span>
+                        )}
+                        {(ep as PodcastEpisode & { durationLabel?: string }).durationLabel && (
+                          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: '#6B7280' }}>
+                            {(ep as PodcastEpisode & { durationLabel?: string }).durationLabel}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 10, color: 'rgba(224,21,21,0.35)', paddingTop: 2, flexShrink: 0 }}>▶</span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
