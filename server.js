@@ -466,87 +466,100 @@ app.get('/api/podcast-episodes', async (req, res) => {
 
 app.get('/api/spotify-episodes', async (req, res) => {
   const showId = req.query.showId;
-  if (!showId || typeof showId !== 'string' || !/^[a-zA-Z0-9]{22}$/.test(showId)) {
-    return res.status(400).json({ error: 'Invalid showId' });
+  if (!showId || typeof showId !== 'string') {
+    return res.status(400).json({ ok: false, error: 'Missing showId', episodes: [] });
   }
 
   try {
-    const url = `https://open.spotify.com/show/${showId}`;
-    const response = await fetch(url, {
+    // oEmbed for show title
+    let showTitle = '';
+    const oembedRes = await fetch(
+      `https://open.spotify.com/oembed?url=https://open.spotify.com/show/${showId}`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if (oembedRes.ok) {
+      const oembedData = await oembedRes.json();
+      showTitle = oembedData.title || '';
+    }
+
+    // Fetch embed page (lighter, serverless-friendly)
+    const response = await fetch(`https://open.spotify.com/embed/show/${showId}`, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9',
+        'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+        'Accept': 'text/html',
       },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(10000),
     });
 
-    if (!response.ok) {
-      throw new Error(`Spotify returned ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Spotify embed returned ${response.status}`);
 
     const html = await response.text();
-    const episodes = [];
+    let episodes = [];
 
-    // Method 1: __NEXT_DATA__ embedded JSON
-    const nextDataMatch = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-    if (nextDataMatch) {
+    // Pattern 1: parse script tag JSON blobs
+    const scriptBlocks = html.match(/<script[^>]*>([\s\S]*?)<\/script>/gi) || [];
+    for (const block of scriptBlocks) {
+      const jsonContent = block.replace(/<\/?script[^>]*>/gi, '').trim();
+      if (jsonContent.length < 100 || !jsonContent.startsWith('{')) continue;
       try {
-        const jsonData = JSON.parse(nextDataMatch[1]);
-        const entity = jsonData?.props?.pageProps?.state?.data?.entity;
-        if (entity) {
-          const items = entity.episodeV2?.items || entity.episodes?.items || [];
-          for (const item of items.slice(0, 20)) {
-            const ep = item?.entity?.data || item?.data || item;
-            if (!ep) continue;
-            const id = ep.uri?.split(':').pop() || ep.id || '';
-            episodes.push({
-              id,
-              title: ep.name || ep.title || 'Untitled',
-              description: (ep.description || ep.htmlDescription || '')
-                .replace(/<[^>]*>/g, '')
-                .replace(/\s+/g, ' ')
-                .trim()
-                .slice(0, 200),
-              publishedAt: ep.releaseDate?.isoString || ep.releaseDate || ep.publishDate || '',
-              durationMs: ep.duration?.totalMilliseconds || ep.durationMs || 0,
-              thumbnailUrl: ep.coverArt?.sources?.[0]?.url || '',
-              externalUrl: id ? `https://open.spotify.com/episode/${id}` : `https://open.spotify.com/show/${showId}`,
-            });
-          }
+        const data = JSON.parse(jsonContent);
+        const jsonStr = JSON.stringify(data);
+
+        const episodeMatches = jsonStr.matchAll(/"name"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*"uri"\s*:\s*"spotify:episode:([a-zA-Z0-9]+)"/g);
+        for (const m of episodeMatches) {
+          const title = m[1]
+            .replace(/\\u[\dA-Fa-f]{4}/g, (match) => String.fromCharCode(parseInt(match.replace('\\u', ''), 16)))
+            .replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+          const episodeId = m[2];
+          if (title === showTitle) continue;
+          episodes.push({ id: episodeId, title, description: '', publishedAt: '', durationMs: 0, thumbnailUrl: '', externalUrl: `https://open.spotify.com/episode/${episodeId}` });
         }
-      } catch (parseErr) {
-        console.error('[Spotify] __NEXT_DATA__ parse error:', parseErr.message);
+
+        const dates = [];
+        for (const dm of jsonStr.matchAll(/"releaseDate"\s*:\s*\{[^}]*"isoString"\s*:\s*"([^"]+)"/g)) dates.push(dm[1]);
+        for (let i = 0; i < Math.min(episodes.length, dates.length); i++) episodes[i].publishedAt = dates[i];
+
+        const durations = [];
+        for (const dm of jsonStr.matchAll(/"totalMilliseconds"\s*:\s*(\d+)/g)) durations.push(parseInt(dm[1], 10));
+        for (let i = 0; i < Math.min(episodes.length, durations.length); i++) episodes[i].durationMs = durations[i];
+
+        if (episodes.length > 0) break;
+      } catch { continue; }
+    }
+
+    // Pattern 2: raw HTML regex fallback
+    if (episodes.length === 0) {
+      const names = [];
+      let m;
+      const nameRegex = /"name":"((?:[^"\\]|\\.)*)"/g;
+      while ((m = nameRegex.exec(html)) !== null) {
+        const name = m[1].replace(/\\u[\dA-Fa-f]{4}/g, (match) => String.fromCharCode(parseInt(match.replace('\\u', ''), 16)));
+        if (name.length > 5 && name.length < 200 && name !== showTitle) names.push(name);
+      }
+      const uniqueNames = [...new Set(names)];
+      for (let i = 0; i < Math.min(uniqueNames.length, 10); i++) {
+        episodes.push({ id: `ep-${showId}-${i}`, title: uniqueNames[i], description: '', publishedAt: '', durationMs: 0, thumbnailUrl: '', externalUrl: `https://open.spotify.com/show/${showId}` });
       }
     }
 
-    // Method 2: regex fallback
-    if (episodes.length === 0) {
-      const episodeRegex = /"name":"([^"]+)"[^}]*?"releaseDate":\{"isoString":"([^"]+)"[^}]*?"totalMilliseconds":(\d+)/g;
-      let match;
-      let count = 0;
-      while ((match = episodeRegex.exec(html)) !== null && count < 10) {
-        episodes.push({
-          id: `ep-${count}`,
-          title: match[1],
-          description: '',
-          publishedAt: match[2],
-          durationMs: parseInt(match[3], 10),
-          thumbnailUrl: '',
-          externalUrl: `https://open.spotify.com/show/${showId}`,
-        });
-        count++;
-      }
-    }
+    // Deduplicate
+    const seen = new Set();
+    episodes = episodes.filter((ep) => { const k = ep.title.toLowerCase().trim(); if (seen.has(k)) return false; seen.add(k); return true; });
 
     // Sort newest first
-    episodes.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+    episodes.sort((a, b) => {
+      if (!a.publishedAt && !b.publishedAt) return 0;
+      if (!a.publishedAt) return 1;
+      if (!b.publishedAt) return -1;
+      return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+    });
 
-    res.json({ ok: true, showId, episodeCount: episodes.length, episodes: episodes.slice(0, 10) });
+    const result = episodes.slice(0, 10);
+    res.json({ ok: result.length > 0, showId, episodeCount: result.length, episodes: result });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error(`[Spotify] Episode fetch failed for ${showId}:`, message);
-    res.status(502).json({ error: message, episodes: [] });
+    res.status(502).json({ ok: false, error: message, episodes: [] });
   }
 });
 
