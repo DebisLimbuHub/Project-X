@@ -58,7 +58,7 @@ export default function App() {
       <SearchModal />
 
       {/* Header Bar */}
-      <Header />
+      <Header onNavigateDashboard={() => setView('dashboard')} />
 
       {/* View toggle nav */}
       <div className="flex-shrink-0 flex items-center gap-1 px-3 py-1 bg-cyber-panel border-b border-cyber-border">

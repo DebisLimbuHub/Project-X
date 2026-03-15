@@ -2,13 +2,16 @@ import { useCyberStore } from '@/store';
 import type { ThreatLevel } from '@/types';
 import { SignalBadge } from '@/components/panels/SignalPanel';
 
-export function Header() {
+export function Header({ onNavigateDashboard }: { onNavigateDashboard?: () => void }) {
   const { threatLevel, setSearchOpen } = useCyberStore();
 
   return (
     <header className="h-10 border-b border-cyber-border flex items-center px-3 gap-4 flex-shrink-0" style={{ background: 'rgba(5, 6, 8, 0.45)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
       {/* Logo & Title */}
-      <div className="flex items-center gap-2">
+      <button
+        onClick={onNavigateDashboard}
+        className="flex items-center gap-2 opacity-100 hover:opacity-75 transition-opacity cursor-pointer bg-transparent border-none p-0"
+      >
         <span
           className="text-[#E01515] text-lg"
           style={{ filter: 'drop-shadow(0 0 6px rgba(224, 21, 21, 0.6))' }}
@@ -22,7 +25,7 @@ export function Header() {
         <span className="text-[9px] font-mono text-gray-600 bg-cyber-card px-1.5 py-0.5 rounded">
           v{__APP_VERSION__}
         </span>
-      </div>
+      </button>
 
       {/* Threat Level Badge */}
       <div className="flex items-center gap-2">
