@@ -391,11 +391,11 @@ export function ThreatMap() {
         }}
       />
 
-      {/* Red radial vignette */}
+      {/* Red radial vignette — only at edges, centre fully clear */}
       <div
         className="absolute inset-0 pointer-events-none z-[500]"
         style={{
-          background: 'radial-gradient(ellipse at center, transparent 0%, transparent 35%, rgba(224, 21, 21, 0.06) 65%, rgba(139, 10, 10, 0.12) 100%)',
+          background: 'radial-gradient(ellipse at center, transparent 0%, transparent 65%, rgba(224, 21, 21, 0.05) 82%, rgba(139, 10, 10, 0.10) 95%, rgba(5, 6, 8, 0.2) 100%)',
         }}
       />
 
@@ -431,11 +431,11 @@ export function ThreatMap() {
         }}
       />
 
-      {/* Heavy vignette — corners nearly black (z-[500] keeps it below labels pane at 650) */}
+      {/* Dark vignette — corners nearly black, centre completely clear */}
       <div
         className="absolute inset-0 pointer-events-none z-[500]"
         style={{
-          background: 'radial-gradient(ellipse at center, transparent 0%, transparent 60%, rgba(5, 6, 8, 0.5) 82%, rgba(5, 6, 8, 0.92) 100%)',
+          background: 'radial-gradient(ellipse at center, transparent 0%, transparent 62%, rgba(5, 6, 8, 0.35) 82%, rgba(5, 6, 8, 0.88) 100%)',
         }}
       />
     </div>
@@ -588,29 +588,22 @@ function populateHeatGlows(map: L.Map) {
   ];
 
   for (const spot of hotspots) {
+    // Outer halo — very faint, tightly clipped to region
     L.circle([spot.lat, spot.lng], {
-      radius: spot.radius,
+      radius: spot.radius * 0.65,
       color: 'transparent',
       fillColor: '#E01515',
-      fillOpacity: spot.intensity * 0.3,
+      fillOpacity: spot.intensity * 0.18,
       interactive: false,
       pane: 'overlayPane',
     }).addTo(map);
 
+    // Inner core — slightly brighter but still subtle
     L.circle([spot.lat, spot.lng], {
-      radius: spot.radius * 0.6,
-      color: 'transparent',
-      fillColor: '#E01515',
-      fillOpacity: spot.intensity * 0.5,
-      interactive: false,
-      pane: 'overlayPane',
-    }).addTo(map);
-
-    L.circle([spot.lat, spot.lng], {
-      radius: spot.radius * 0.25,
+      radius: spot.radius * 0.28,
       color: 'transparent',
       fillColor: '#FF2020',
-      fillOpacity: spot.intensity * 0.7,
+      fillOpacity: spot.intensity * 0.30,
       interactive: false,
       pane: 'overlayPane',
     }).addTo(map);

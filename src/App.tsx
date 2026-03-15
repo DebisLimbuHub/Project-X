@@ -45,11 +45,11 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden bg-cyber-bg">
-      {/* Global red hue overlay — gives everything a subtle red tint */}
+      {/* Global red hue overlay — edge-only, centre completely transparent */}
       <div
         className="fixed inset-0 pointer-events-none z-[9999]"
         style={{
-          background: 'radial-gradient(ellipse at center, rgba(224, 21, 21, 0.02) 0%, rgba(139, 10, 10, 0.04) 100%)',
+          background: 'radial-gradient(ellipse at center, transparent 0%, transparent 70%, rgba(224, 21, 21, 0.015) 90%, rgba(139, 10, 10, 0.03) 100%)',
           mixBlendMode: 'screen',
         }}
       />
