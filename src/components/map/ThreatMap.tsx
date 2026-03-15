@@ -231,36 +231,31 @@ function getMapHueFromScore(score: number): {
   rgb: string;
   scanlineHex: string;
   glowRgb: string;
+  glowOpacity: number;
 } {
-  if (score >= 7) {
-    const intensity = Math.min((score - 7) / 3, 1);
-    return {
-      tileFilter: `brightness(${(0.6 - intensity * 0.1).toFixed(2)}) saturate(${(0.5 + intensity * 0.2).toFixed(2)}) sepia(${(0.3 + intensity * 0.1).toFixed(2)}) hue-rotate(-30deg) contrast(1.15)`,
-      vignetteColour: `rgba(224, 21, 21, ${(0.06 + intensity * 0.06).toFixed(3)})`,
-      rgb: '224, 21, 21',
-      scanlineHex: '#E01515',
-      glowRgb: '224, 21, 21',
-    };
-  } else if (score >= 4) {
-    const t = (score - 4) / 3;
-    const g = Math.round(220 - t * 200);
-    return {
-      tileFilter: `brightness(0.65) saturate(0.5) sepia(0.25) hue-rotate(${Math.round(-30 + (1 - t) * 50)}deg) contrast(1.1)`,
-      vignetteColour: `rgba(255, ${g}, 0, 0.06)`,
-      rgb: `255, ${g}, 0`,
-      scanlineHex: `rgb(255, ${g}, 0)`,
-      glowRgb: `255, ${g}, 0`,
-    };
-  } else {
-    const intensity = Math.min(score / 4, 1);
-    return {
-      tileFilter: `brightness(0.7) saturate(0.5) sepia(0.15) hue-rotate(${Math.round(70 - intensity * 30)}deg) contrast(1.05)`,
-      vignetteColour: `rgba(50, 205, 50, ${(0.04 + intensity * 0.02).toFixed(3)})`,
-      rgb: '50, 205, 50',
-      scanlineHex: '#32CD32',
-      glowRgb: '50, 205, 50',
-    };
-  }
+  const t = Math.max(0, Math.min(score / 10, 1)); // 0 → 1
+
+  // Tile filter — all values scale continuously with score
+  const brightness = (0.72 - t * 0.22).toFixed(2);   // 0.72 → 0.50  (darker at high threat)
+  const saturate   = (0.25 + t * 0.85).toFixed(2);   // 0.25 → 1.10  (more vivid reds)
+  const sepia      = (0.08 + t * 0.72).toFixed(2);   // 0.08 → 0.80  (warm red-brown cast)
+  const hueRot     = Math.round(-5  - t * 40);        // -5   → -45deg (pull toward red)
+  const contrast   = (1.05 + t * 0.30).toFixed(2);   // 1.05 → 1.35  (harder look)
+
+  // Vignette opacity — barely visible at 0, strong glow at 10
+  const vigOpacity = (0.02 + t * 0.16).toFixed(3);   // 0.02 → 0.18
+
+  // Heat glow opacity multiplier
+  const glowOpacity = 0.4 + t * 1.2;                 // 0.4x → 1.6x
+
+  return {
+    tileFilter: `brightness(${brightness}) saturate(${saturate}) sepia(${sepia}) hue-rotate(${hueRot}deg) contrast(${contrast})`,
+    vignetteColour: `rgba(224, 21, 21, ${vigOpacity})`,
+    rgb: '224, 21, 21',
+    scanlineHex: '#E01515',
+    glowRgb: '224, 21, 21',
+    glowOpacity,
+  };
 }
 
 // ===== MAIN MAP COMPONENT =====
@@ -380,26 +375,26 @@ export function ThreatMap() {
     tilePane.style.transition = 'filter 3s ease-in-out';
   }, [score]);
 
-  // Dynamic heat glows — recreate with score-appropriate colour
+  // Dynamic heat glows — opacity scales continuously with score
   useEffect(() => {
     if (!heatGlowGroupRef.current) return;
     const group = heatGlowGroupRef.current;
     group.clearLayers();
-    const fillColour = score >= 7 ? '#E01515' : score >= 4 ? '#DDAA00' : '#32CD32';
+    const { glowOpacity } = getMapHueFromScore(score);
     for (const spot of HEAT_GLOW_HOTSPOTS) {
       L.circle([spot.lat, spot.lng], {
         radius: spot.radius * 0.65,
         color: 'transparent',
-        fillColor: fillColour,
-        fillOpacity: spot.intensity * 0.18,
+        fillColor: '#E01515',
+        fillOpacity: spot.intensity * 0.18 * glowOpacity,
         interactive: false,
         pane: 'overlayPane',
       }).addTo(group);
       L.circle([spot.lat, spot.lng], {
         radius: spot.radius * 0.28,
         color: 'transparent',
-        fillColor: fillColour,
-        fillOpacity: spot.intensity * 0.30,
+        fillColor: '#FF2020',
+        fillOpacity: spot.intensity * 0.30 * glowOpacity,
         interactive: false,
         pane: 'overlayPane',
       }).addTo(group);
