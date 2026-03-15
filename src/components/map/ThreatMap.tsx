@@ -206,13 +206,72 @@ const ZOOM_PRESETS: ZoomPreset[] = [
   { name: 'AMERICAS', lat: 25, lng: -90, zoom: 3 },
 ];
 
+// ===== HEAT GLOW HOTSPOTS =====
+
+const HEAT_GLOW_HOTSPOTS = [
+  { lat: 33.0, lng: 44.0,  radius: 800000, intensity: 0.12 },
+  { lat: 28.0, lng: 48.0,  radius: 600000, intensity: 0.10 },
+  { lat: 49.0, lng: 32.0,  radius: 700000, intensity: 0.11 },
+  { lat: 50.0, lng: 10.0,  radius: 900000, intensity: 0.08 },
+  { lat: 35.0, lng: 120.0, radius: 800000, intensity: 0.10 },
+  { lat: 37.0, lng: 127.0, radius: 500000, intensity: 0.09 },
+  { lat: 56.0, lng: 38.0,  radius: 700000, intensity: 0.09 },
+  { lat: 33.0, lng: 53.0,  radius: 600000, intensity: 0.10 },
+  { lat: 5.0,  lng: 40.0,  radius: 600000, intensity: 0.07 },
+  { lat: 38.0, lng: -77.0, radius: 800000, intensity: 0.08 },
+  { lat: 22.0, lng: 78.0,  radius: 700000, intensity: 0.06 },
+  { lat: 5.0,  lng: 105.0, radius: 600000, intensity: 0.07 },
+];
+
+// ===== DYNAMIC MAP HUE =====
+
+function getMapHueFromScore(score: number): {
+  tileFilter: string;
+  vignetteColour: string;
+  rgb: string;
+  scanlineHex: string;
+  glowRgb: string;
+} {
+  if (score >= 7) {
+    const intensity = Math.min((score - 7) / 3, 1);
+    return {
+      tileFilter: `brightness(${(0.6 - intensity * 0.1).toFixed(2)}) saturate(${(0.5 + intensity * 0.2).toFixed(2)}) sepia(${(0.3 + intensity * 0.1).toFixed(2)}) hue-rotate(-30deg) contrast(1.15)`,
+      vignetteColour: `rgba(224, 21, 21, ${(0.06 + intensity * 0.06).toFixed(3)})`,
+      rgb: '224, 21, 21',
+      scanlineHex: '#E01515',
+      glowRgb: '224, 21, 21',
+    };
+  } else if (score >= 4) {
+    const t = (score - 4) / 3;
+    const g = Math.round(220 - t * 200);
+    return {
+      tileFilter: `brightness(0.65) saturate(0.5) sepia(0.25) hue-rotate(${Math.round(-30 + (1 - t) * 50)}deg) contrast(1.1)`,
+      vignetteColour: `rgba(255, ${g}, 0, 0.06)`,
+      rgb: `255, ${g}, 0`,
+      scanlineHex: `rgb(255, ${g}, 0)`,
+      glowRgb: `255, ${g}, 0`,
+    };
+  } else {
+    const intensity = Math.min(score / 4, 1);
+    return {
+      tileFilter: `brightness(0.7) saturate(0.5) sepia(0.15) hue-rotate(${Math.round(70 - intensity * 30)}deg) contrast(1.05)`,
+      vignetteColour: `rgba(50, 205, 50, ${(0.04 + intensity * 0.02).toFixed(3)})`,
+      rgb: '50, 205, 50',
+      scanlineHex: '#32CD32',
+      glowRgb: '50, 205, 50',
+    };
+  }
+}
+
 // ===== MAIN MAP COMPONENT =====
 
 export function ThreatMap() {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const layerGroupsRef = useRef<Record<string, L.LayerGroup>>({});
-  const { layers, setMapView } = useCyberStore();
+  const heatGlowGroupRef = useRef<L.LayerGroup | null>(null);
+  const { layers, setMapView, threatLevel } = useCyberStore();
+  const score = threatLevel?.score ?? 5;
   const [activePreset, setActivePreset] = useState('GLOBAL');
 
   // Initialise map
@@ -251,12 +310,6 @@ export function ThreatMap() {
       { subdomains: 'abcd', maxZoom: 19, opacity: 0.9, pane: 'labels' }
     ).addTo(map);
 
-    // Apply red hue filter only to the base tile pane (labels pane is separate)
-    const tilePane = map.getPane('tilePane');
-    if (tilePane) {
-      tilePane.style.filter = 'brightness(0.6) saturate(0.5) sepia(0.4) hue-rotate(-30deg) contrast(1.15)';
-    }
-
     // Zoom control — bottom left
     L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
@@ -286,7 +339,8 @@ export function ThreatMap() {
     layerGroupsRef.current = groups;
 
     // Populate static layers
-    populateHeatGlows(map);
+    const heatGlowGroup = L.layerGroup().addTo(map);
+    heatGlowGroupRef.current = heatGlowGroup;
     populateAPTMarkers(groups['apt-markers']);
     populateAttackArcs(groups['active-campaigns']);
     populateInfrastructure(groups['critical-infra']);
@@ -316,6 +370,42 @@ export function ThreatMap() {
     }
   }, [layers]);
 
+  // Dynamic tile filter — smooth colour shift when score changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const tilePane = mapRef.current.getPane('tilePane');
+    if (!tilePane) return;
+    const hue = getMapHueFromScore(score);
+    tilePane.style.filter = hue.tileFilter;
+    tilePane.style.transition = 'filter 3s ease-in-out';
+  }, [score]);
+
+  // Dynamic heat glows — recreate with score-appropriate colour
+  useEffect(() => {
+    if (!heatGlowGroupRef.current) return;
+    const group = heatGlowGroupRef.current;
+    group.clearLayers();
+    const fillColour = score >= 7 ? '#E01515' : score >= 4 ? '#DDAA00' : '#32CD32';
+    for (const spot of HEAT_GLOW_HOTSPOTS) {
+      L.circle([spot.lat, spot.lng], {
+        radius: spot.radius * 0.65,
+        color: 'transparent',
+        fillColor: fillColour,
+        fillOpacity: spot.intensity * 0.18,
+        interactive: false,
+        pane: 'overlayPane',
+      }).addTo(group);
+      L.circle([spot.lat, spot.lng], {
+        radius: spot.radius * 0.28,
+        color: 'transparent',
+        fillColor: fillColour,
+        fillOpacity: spot.intensity * 0.30,
+        interactive: false,
+        pane: 'overlayPane',
+      }).addTo(group);
+    }
+  }, [score]);
+
   // Handle zoom presets
   const flyToPreset = (preset: ZoomPreset) => {
     mapRef.current?.flyTo([preset.lat, preset.lng], preset.zoom, {
@@ -324,6 +414,8 @@ export function ThreatMap() {
     });
     setActivePreset(preset.name);
   };
+
+  const hue = getMapHueFromScore(score);
 
   return (
     <div className="relative w-full h-full">
@@ -354,48 +446,50 @@ export function ThreatMap() {
         <MapStat label="Attack Vectors" count={ATTACK_ARCS.length} colour="#D43A1A" />
       </div>
 
-      {/* Grid overlay — use repeating gradients to avoid tiled seam gaps */}
+      {/* Grid overlay — colour tracks threat level */}
       <div
         className="absolute inset-0 pointer-events-none z-[500]"
         style={{
           backgroundImage: `
             repeating-linear-gradient(
               to bottom,
-              rgba(224, 21, 21, 0.05) 0,
-              rgba(224, 21, 21, 0.05) 1px,
+              rgba(${hue.rgb}, 0.05) 0,
+              rgba(${hue.rgb}, 0.05) 1px,
               transparent 1px,
               transparent 80px
             ),
             repeating-linear-gradient(
               to right,
-              rgba(224, 21, 21, 0.05) 0,
-              rgba(224, 21, 21, 0.05) 1px,
+              rgba(${hue.rgb}, 0.05) 0,
+              rgba(${hue.rgb}, 0.05) 1px,
               transparent 1px,
               transparent 80px
             ),
             repeating-linear-gradient(
               to bottom,
-              rgba(224, 21, 21, 0.025) 0,
-              rgba(224, 21, 21, 0.025) 1px,
+              rgba(${hue.rgb}, 0.025) 0,
+              rgba(${hue.rgb}, 0.025) 1px,
               transparent 1px,
               transparent 20px
             ),
             repeating-linear-gradient(
               to right,
-              rgba(224, 21, 21, 0.025) 0,
-              rgba(224, 21, 21, 0.025) 1px,
+              rgba(${hue.rgb}, 0.025) 0,
+              rgba(${hue.rgb}, 0.025) 1px,
               transparent 1px,
               transparent 20px
             )
           `,
+          transition: 'all 3s ease-in-out',
         }}
       />
 
-      {/* Red radial vignette — only at edges, centre fully clear */}
+      {/* Colour vignette — tracks threat level */}
       <div
         className="absolute inset-0 pointer-events-none z-[500]"
         style={{
-          background: 'radial-gradient(ellipse at center, transparent 0%, transparent 65%, rgba(224, 21, 21, 0.05) 82%, rgba(139, 10, 10, 0.10) 95%, rgba(5, 6, 8, 0.2) 100%)',
+          background: `radial-gradient(ellipse at center, transparent 0%, transparent 65%, ${hue.vignetteColour} 82%, rgba(5, 6, 8, 0.2) 100%)`,
+          transition: 'all 3s ease-in-out',
         }}
       />
 
@@ -420,14 +514,15 @@ export function ThreatMap() {
         }}
       />
 
-      {/* Animated scanline */}
+      {/* Animated scanline — colour tracks threat level */}
       <div
         className="absolute left-0 right-0 pointer-events-none z-[600] animate-scanline"
         style={{
           height: '2px',
-          background: 'linear-gradient(to bottom, transparent, #E01515, transparent)',
+          background: `linear-gradient(to bottom, transparent, ${hue.scanlineHex}, transparent)`,
           opacity: 0.12,
-          boxShadow: '0 0 20px rgba(224, 21, 21, 0.25), 0 0 40px rgba(224, 21, 21, 0.1)',
+          boxShadow: `0 0 20px rgba(${hue.glowRgb}, 0.25), 0 0 40px rgba(${hue.glowRgb}, 0.1)`,
+          transition: 'all 3s ease-in-out',
         }}
       />
 
@@ -571,44 +666,6 @@ function populateInfrastructure(group: L.LayerGroup) {
   }
 }
 
-function populateHeatGlows(map: L.Map) {
-  const hotspots = [
-    { lat: 33.0, lng: 44.0, radius: 800000, intensity: 0.12 },
-    { lat: 28.0, lng: 48.0, radius: 600000, intensity: 0.10 },
-    { lat: 49.0, lng: 32.0, radius: 700000, intensity: 0.11 },
-    { lat: 50.0, lng: 10.0, radius: 900000, intensity: 0.08 },
-    { lat: 35.0, lng: 120.0, radius: 800000, intensity: 0.10 },
-    { lat: 37.0, lng: 127.0, radius: 500000, intensity: 0.09 },
-    { lat: 56.0, lng: 38.0, radius: 700000, intensity: 0.09 },
-    { lat: 33.0, lng: 53.0, radius: 600000, intensity: 0.10 },
-    { lat: 5.0,  lng: 40.0, radius: 600000, intensity: 0.07 },
-    { lat: 38.0, lng: -77.0, radius: 800000, intensity: 0.08 },
-    { lat: 22.0, lng: 78.0, radius: 700000, intensity: 0.06 },
-    { lat: 5.0,  lng: 105.0, radius: 600000, intensity: 0.07 },
-  ];
-
-  for (const spot of hotspots) {
-    // Outer halo — very faint, tightly clipped to region
-    L.circle([spot.lat, spot.lng], {
-      radius: spot.radius * 0.65,
-      color: 'transparent',
-      fillColor: '#E01515',
-      fillOpacity: spot.intensity * 0.18,
-      interactive: false,
-      pane: 'overlayPane',
-    }).addTo(map);
-
-    // Inner core — slightly brighter but still subtle
-    L.circle([spot.lat, spot.lng], {
-      radius: spot.radius * 0.28,
-      color: 'transparent',
-      fillColor: '#FF2020',
-      fillOpacity: spot.intensity * 0.30,
-      interactive: false,
-      pane: 'overlayPane',
-    }).addTo(map);
-  }
-}
 
 function populateCables(group: L.LayerGroup) {
   for (const cable of UNDERSEA_CABLES) {
