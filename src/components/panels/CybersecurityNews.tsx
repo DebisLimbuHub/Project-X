@@ -1121,9 +1121,6 @@ const FILTER_TABS: { id: PodcastCategory; label: string }[] = [
 function PodcastsPage() {
   const [activeCategory, setActiveCategory] = useState<PodcastCategory>('all');
   const [selectedPodcast, setSelectedPodcast] = useState<string | null>(null);
-  const [episodes, setEpisodes] = useState<PodcastEpisode[]>([]);
-  const [episodesLoading, setEpisodesLoading] = useState(false);
-  const [episodesError, setEpisodesError] = useState<string | null>(null);
 
   const featured = CYBER_PODCASTS.filter((p) => p.featured);
   const allFiltered = CYBER_PODCASTS.filter(
@@ -1133,50 +1130,8 @@ function PodcastsPage() {
     ? CYBER_PODCASTS.find((p) => p.id === selectedPodcast) ?? null
     : null;
 
-  const fetchEpisodes = async (podcast: CyberPodcast) => {
-    setEpisodesLoading(true);
-    setEpisodesError(null);
-    setEpisodes([]);
-    try {
-      const params = new URLSearchParams({ name: podcast.title });
-      if (podcast.rssUrl) params.set('rssUrl', podcast.rssUrl);
-      const response = await fetch(`/api/podcast-episodes?${params.toString()}`);
-      const data = await response.json();
-      if (data.ok && Array.isArray(data.episodes) && data.episodes.length > 0) {
-        const mapped: PodcastEpisode[] = data.episodes.map(
-          (item: { title: string; link: string; description: string; pubDate: string }, i: number) => ({
-            id: item.link || `ep-${i}`,
-            title: item.title || 'Untitled',
-            description: item.description || '',
-            publishedAt: item.pubDate || '',
-            durationMs: 0,
-            thumbnailUrl: '',
-            externalUrl: item.link || podcast.spotifyUrl || '',
-          })
-        );
-        setEpisodes(mapped);
-      } else {
-        setEpisodesError(data.error || 'No episodes found');
-      }
-    } catch {
-      setEpisodesError('Failed to load episodes');
-    } finally {
-      setEpisodesLoading(false);
-    }
-  };
-
   const handlePlay = (id: string) => {
-    if (selectedPodcast === id) {
-      setSelectedPodcast(null);
-      setEpisodes([]);
-      setEpisodesError(null);
-      return;
-    }
-    setSelectedPodcast(id);
-    const podcast = CYBER_PODCASTS.find((p) => p.id === id);
-    if (podcast) {
-      fetchEpisodes(podcast);
-    }
+    setSelectedPodcast((prev) => (prev === id ? null : id));
   };
 
   if (CYBER_PODCASTS.length === 0) {
@@ -1206,7 +1161,7 @@ function PodcastsPage() {
               </span>
             </div>
             <button
-              onClick={() => { setSelectedPodcast(null); setEpisodes([]); setEpisodesError(null); }}
+              onClick={() => setSelectedPodcast(null)}
               style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 14, color: '#6B7280', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1, padding: '2px 6px' }}
               aria-label="Close player"
             >
@@ -1218,11 +1173,11 @@ function PodcastsPage() {
               key={selectedPodcast}
               src={selectedPodcastData.spotifyEmbedUrl}
               width="100%"
-              height="352"
+              height="500"
               frameBorder="0"
               allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
               loading="lazy"
-              style={{ borderRadius: 8, border: 'none', display: 'block' }}
+              style={{ borderRadius: 12, border: 'none', display: 'block' }}
               title={`${selectedPodcastData.title} on Spotify`}
             />
           ) : (
@@ -1237,118 +1192,6 @@ function PodcastsPage() {
               )}
             </div>
           )}
-
-          {/* ── Episode browser ── */}
-          <div style={{ marginTop: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#E8E8E8', textShadow: '0 0 8px rgba(224,21,21,0.4)' }}>
-                Latest Episodes
-              </span>
-              <div style={{ flex: 1, height: 1, background: 'rgba(224,21,21,0.12)' }} />
-              {episodes.length > 0 && (
-                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: '#6B7280' }}>
-                  {episodes.length} episodes
-                </span>
-              )}
-            </div>
-
-            {/* Loading */}
-            {episodesLoading && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '24px 0' }}>
-                <div style={{ width: 18, height: 18, border: '2px solid rgba(224,21,21,0.15)', borderTop: '2px solid #E01515', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
-                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#6B7280' }}>Loading episodes...</span>
-              </div>
-            )}
-
-            {/* Error */}
-            {episodesError && !episodesLoading && (
-              <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#E01515' }}>{episodesError}</span>
-                {selectedPodcastData.spotifyUrl && (
-                  <a
-                    href={selectedPodcastData.spotifyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ display: 'block', marginTop: 8, fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#1DB954' }}
-                  >
-                    Open in Spotify →
-                  </a>
-                )}
-              </div>
-            )}
-
-            {/* Episode list */}
-            {!episodesLoading && !episodesError && episodes.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {episodes.map((ep, index) => (
-                  <a
-                    key={ep.id}
-                    href={ep.externalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 12,
-                      padding: '9px 12px',
-                      borderRadius: 6,
-                      border: '1px solid rgba(224,21,21,0.08)',
-                      background: 'rgba(224,21,21,0.02)',
-                      textDecoration: 'none',
-                      transition: 'background 0.12s, border-color 0.12s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(224,21,21,0.07)';
-                      e.currentTarget.style.borderColor = 'rgba(224,21,21,0.22)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(224,21,21,0.02)';
-                      e.currentTarget.style.borderColor = 'rgba(224,21,21,0.08)';
-                    }}
-                  >
-                    {/* Number */}
-                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 600, color: 'rgba(224,21,21,0.35)', minWidth: 20, paddingTop: 2, flexShrink: 0 }}>
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-
-                    {/* Content */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 500, color: '#E8E8E8', marginBottom: 2, lineHeight: 1.35 }}>
-                        {ep.title}
-                      </div>
-                      {ep.description && (
-                        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 10, color: '#8A8F98', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {ep.description}
-                        </div>
-                      )}
-                      <div style={{ display: 'flex', gap: 10, marginTop: 3 }}>
-                        {ep.publishedAt && (
-                          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: '#6B7280' }}>
-                            {new Date(ep.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </span>
-                        )}
-                        {ep.durationMs > 0 && (
-                          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: '#6B7280' }}>
-                            {Math.round(ep.durationMs / 60000)} min
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Play arrow */}
-                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: 'rgba(224,21,21,0.4)', paddingTop: 2, flexShrink: 0 }}>▶</span>
-                  </a>
-                ))}
-              </div>
-            )}
-
-            {/* Empty */}
-            {!episodesLoading && !episodesError && episodes.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#4B5563' }}>No episodes found</span>
-              </div>
-            )}
-          </div>
         </div>
       )}
 
